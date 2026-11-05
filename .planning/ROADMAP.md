@@ -88,6 +88,7 @@ Plans:
 **Wave 3** *(blocked on 03-03)*
 
 - [x] 03-04-PLAN.md — server wiring: polling on, refresh via list_all, decoded namespace routes, auth status, release note
+
 **UI hint**: yes
 
 ### Phase 4: Escrita GitLab: publicação dos resultados
@@ -107,9 +108,17 @@ Plans:
 
 Plans:
 
+**Wave 1**
+
 - [ ] 04-01-PLAN.md — GitLab write primitives: body sanitizer, `glab api --input` JSON writer, MR diff line map/position builder
 - [ ] 04-02-PLAN.md — status-comment in-place edit hook; GitLab never approves/requests changes; GitLab commit link
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 04-03-PLAN.md — GitLab publisher: notes layer, status notes, post_review (discussions, fallback, summary, idempotency, head abort)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 04-04-PLAN.md — forge wiring, lift Phase-3 gates, release note, HUMAN-UAT, full gate
 
 ### Phase 5: Indexação, skills, UI e documentação
