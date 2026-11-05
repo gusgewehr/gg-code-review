@@ -414,7 +414,11 @@ export function SettingsPage() {
           <SettingsSection id="repositories" activeSection={activeSection}>
             <SettingsGroup
               title="Repository access"
-              description="Select organizations first, then choose monitored repositories."
+              description={
+                gitlabForge
+                  ? "Select groups first, then choose monitored projects."
+                  : "Select organizations first, then choose monitored repositories."
+              }
               action={
                 <div className="flex items-center gap-3">
                   <span className="text-xs font-medium text-fg-muted">{visibleSelectedCount} repos selected</span>
@@ -426,12 +430,16 @@ export function SettingsPage() {
               }
             >
               {authDisconnected ? (
-                <DSEmptyState>Reconnect GitHub to manage repositories.</DSEmptyState>
+                <DSEmptyState>
+                  {gitlabForge
+                    ? "GitLab is not connected. Connect with a personal access token in GitLab connection, then refresh repository access."
+                    : "Reconnect GitHub to manage repositories."}
+                </DSEmptyState>
               ) : (
                 <div className="settings-select-stack flex flex-col gap-3.5 p-4">
                   <MultiSelect
-                    label="Organizations"
-                    placeholder="Select organizations"
+                    label={gitlabForge ? "Groups" : "Organizations"}
+                    placeholder={gitlabForge ? "Select groups" : "Select organizations"}
                     options={workspaceOptions}
                     selected={selectedLogins}
                     onToggle={(login) => setSelectedLogins((current) => toggleSet(current, login))}
@@ -469,6 +477,7 @@ export function SettingsPage() {
                     disabled={loading}
                     loading={reposQuery.isLoading}
                     hasOrganizations={selectedLogins.size > 0}
+                    forge={gitlabForge ? "gitlab" : "github"}
                   />
                 </div>
               )}

@@ -13,6 +13,7 @@ export function RepositorySelector({
   loading,
   hasOrganizations,
   onToggle,
+  forge,
 }: {
   repos: Repo[];
   selected: Set<number>;
@@ -21,7 +22,9 @@ export function RepositorySelector({
   loading: boolean;
   hasOrganizations: boolean;
   onToggle: (id: number) => void;
+  forge?: "github" | "gitlab";
 }) {
+  const gitlab = forge === "gitlab";
   const isSelected = (repo: Repo) => selected.has(repo.id) || locked.has(repoOwner(repo));
   const [search, setSearch] = useState("");
   const query = search.trim().toLowerCase();
@@ -38,7 +41,7 @@ export function RepositorySelector({
         aria-label="Search repositories"
         icon={<Search className="size-4" />}
         value={search}
-        placeholder="Search by organization or repository name…"
+        placeholder={gitlab ? "Search by group or project name…" : "Search by organization or repository name…"}
         onChange={(event) => setSearch(event.target.value)}
         disabled={!hasOrganizations || loading}
       />
@@ -50,14 +53,22 @@ export function RepositorySelector({
         aria-busy={loading}
       >
         {!hasOrganizations ? (
-          <DSEmptyState>Select organizations above to browse their repositories.</DSEmptyState>
+          <DSEmptyState>
+            {gitlab
+              ? "Select groups above to browse their projects."
+              : "Select organizations above to browse their repositories."}
+          </DSEmptyState>
         ) : loading ? (
-          <BrandLoading size="compact" label="Loading repositories…" />
+          <BrandLoading size="compact" label={gitlab ? "Loading projects…" : "Loading repositories…"} />
         ) : filteredRepos.length === 0 ? (
           <DSEmptyState>
             {query
-              ? "No repositories match this search."
-              : "No repositories available. Refresh repository access to check again."}
+              ? gitlab
+                ? "No projects match this search."
+                : "No repositories match this search."
+              : gitlab
+                ? "No projects available. GitLab only lists projects where you have Developer access or higher. Refresh repository access to check again."
+                : "No repositories available. Refresh repository access to check again."}
           </DSEmptyState>
         ) : (
           filteredRepos.map((repo) => (
