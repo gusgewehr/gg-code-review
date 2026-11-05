@@ -2,59 +2,37 @@
 phase: 05-indexa-o-skills-ui-e-documenta-o
 reviewed: 2026-11-05T00:00:00Z
 depth: standard
-files_reviewed: 24
+iteration: 2
+files_reviewed: 4
 files_reviewed_list:
-  - README.md
-  - backend/src/gitlab/auth.rs
-  - backend/src/server/indexing.rs
-  - backend/src/server/mod.rs
-  - backend/src/server/tests.rs
-  - changelog.d/feat-gitlab-connection.md
-  - docs/gitlab.md
-  - src/platform/components/ReviewFlowNodes.tsx
-  - src/platform/lib/forgeTerms.test.tsx
   - src/platform/lib/forgeTerms.ts
+  - src/platform/lib/forgeTerms.test.tsx
   - src/platform/pages/ReviewsPage.tsx
   - src/platform/pages/SettingsPage.tsx
-  - src/platform/pages/reviews/ReviewDetail.tsx
-  - src/platform/pages/reviews/ReviewSections.test.tsx
-  - src/platform/pages/reviews/ReviewSections.tsx
-  - src/platform/pages/reviews/RunDetails.tsx
-  - src/platform/pages/settings/ReviewSettingsPanel.tsx
-  - src/platform/pages/usage/PrUsageList.tsx
-  - src/platform/pages/usage/UsageBreakdown.tsx
-  - src/platform/pages/usage/UsageHero.tsx
-  - src/platform/pages/usage/UsageTotals.tsx
 findings:
   critical: 0
-  warning: 2
+  warning: 0
   info: 2
-  total: 4
+  total: 2
 status: issues_found
 ---
 
-# Phase 5: Code Review Report
+# Phase 5: Code Review Report (iteration 2)
 
 **Reviewed:** 2026-11-05
 **Depth:** standard
+**Files Reviewed:** 4
+**Status:** issues_found (Info only)
 
 ## Summary
 
-No GitHub regressions found. GitHub strings, `#n`, and the GitHubMark are unchanged when `forge === "github"`. All `useForgeTerms()` calls sit at the top level of components and run before any early return. `clone_url` is correct: the GitLab host comes from `forge::gh_host()`, nested paths are preserved, and git auth goes through `forge::apply_git_https_auth`. No token appears in the docs or error strings. `docs/gitlab.md` matches `docker-compose.yml` (`OCR_FORGE`, `OCR_GITLAB_HOST`, `OCR_GITLAB_CA_FILE` mounted at `/run/ocr-ca/ca.crt:ro`) and the `docker/gitlab-spike.py` flags and `GITLAB_TOKEN` env handling.
+Both iteration 1 warnings are resolved after commit 1d94867, with no regressions found.
 
-## Warnings
-
-### WR-01: `terms` object in `useMemo` deps defeats memoization
-
-**File:** `src/platform/pages/ReviewsPage.tsx` (the filter `useMemo`, deps `[..., terms]`)
-**Issue:** `forgeTerms()` returns a new object on every render, so the memo recomputes every render. It also adds no safety.
-**Fix:** Depend on `terms.forge` and call `forgeTerms(terms.forge).ref`, or memoize inside `useForgeTerms` with `useMemo(() => forgeTerms(kind), [kind])`. The second option fixes every consumer.
-
-### WR-02: Forge terms flash or stick on GitHub wording for GitLab deploys
-
-**File:** `src/platform/lib/forgeTerms.ts:28-38`
-**Issue:** While `forgeStatus` is pending, or if it fails (`retry: false`, no refetch because `staleTime` is infinite), a GitLab deploy shows "pull request", `#n` and the GitHub wording. A failed first fetch means the wrong terms for the whole session. The per-session failure is the real risk, because the wrong-forge text stays on screen until reload.
-**Fix:** Let a failed query retry (for example `retry: 2`, or no `staleTime: Infinity` while `data` is undefined). Optionally fall back to a neutral value until the status resolves.
+- WR-01 is resolved. `useForgeTerms` now returns the module-level `GITHUB_TERMS` or `GITLAB_TERMS` constant, so the reference is stable and `terms` in `useMemo` deps behaves correctly.
+- WR-02 is resolved. The hook query uses `retry: 2`, so a transient error no longer pins GitHub wording. With `staleTime: Infinity`, a query with no data still counts as stale. A failed query therefore refetches on the next observer mount or refocus.
+- The shared key `["forge","status"]` has differing options in `SettingsPage` (`retry: false`, default `staleTime`) and in the hook. Both observers share one query and one `queryFn`. The worst case is fewer retries when `SettingsPage` triggers the fetch. That is harmless and not a bug.
+- GitHub text is unchanged. The default path returns `forgeTerms("github")`, which matches the earlier output.
+- Hook order is intact. `useContext` and `useQuery` are called unconditionally. The idle client plus `enabled: false` keeps the hook valid without a provider.
 
 ## Info
 
