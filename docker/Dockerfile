@@ -67,6 +67,12 @@ RUN case "$TARGETARCH" in \
   && ln -s /opt/codex/bin/codex /usr/local/bin/codex \
   && test "$(/opt/codex/bin/codex --version | cut -d ' ' -f2)" = "$CODEX_CLI_VERSION"
 LABEL ai.codex.cli.version="${CODEX_CLI_VERSION}"
+ARG GLAB_VERSION=1.128.0
+ARG GLAB_SHA256_AMD64=bc024819e7598b19429a199cd87f640d98b2b67416d8ad796f19e4260b57a7c7
+ARG GLAB_SHA256_ARM64=60d0512085a8c1be7c5ef51aa7e4ee28213444cea0376b3260707d90489199ea
+RUN case "$TARGETARCH" in     amd64) arch=amd64; checksum="$GLAB_SHA256_AMD64" ;;     arm64) arch=arm64; checksum="$GLAB_SHA256_ARM64" ;;     *) echo "Unsupported glab architecture: $TARGETARCH" >&2; exit 1 ;;   esac   && curl -fsSL --retry 3 "https://gitlab.com/gitlab-org/cli/-/releases/v${GLAB_VERSION}/downloads/glab_${GLAB_VERSION}_linux_${arch}.tar.gz" -o /tmp/glab.tar.gz   && printf '%s  /tmp/glab.tar.gz
+' "$checksum" | sha256sum -c -   && mkdir /tmp/glab && tar -xzf /tmp/glab.tar.gz -C /tmp/glab   && install -m 0755 "$(find /tmp/glab -type f -name glab | head -n1)" /usr/local/bin/glab   && rm -rf /tmp/glab /tmp/glab.tar.gz   && glab --version | grep -q "$GLAB_VERSION"
+LABEL ai.glab.cli.version="${GLAB_VERSION}"
 ENV DISABLE_AUTOUPDATER=1
 WORKDIR /app
 COPY --from=server /app/assets ./assets

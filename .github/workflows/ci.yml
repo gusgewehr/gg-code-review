@@ -262,6 +262,9 @@ jobs:
       - name: Diagnostic regression tests
         run: python3 -B docker/test_diagnostics.py
 
+      - name: GitLab isolation check
+        run: python3 -B docker/test-gitlab-isolation.py
+
       - name: Web proxy behavior regression
         run: python3 -B docker/test-web-proxy.py
 

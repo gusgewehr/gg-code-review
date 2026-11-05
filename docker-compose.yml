@@ -105,6 +105,9 @@ services:
       - "127.0.0.1:1455:1456"
     environment:
       OCR_GH_HOST: ${OCR_GH_HOST:-}
+      # Changing forge/host over existing data stops the server.
+      OCR_FORGE: ${OCR_FORGE:-github}
+      OCR_GITLAB_HOST: ${OCR_GITLAB_HOST:-}
       OCR_BIND: 0.0.0.0:8787
       OCR_DATA_DIR: /data
       # Read once at startup and removed from the environment, so no CLI the server runs sees them.
@@ -130,6 +133,8 @@ services:
       - review-claude-auth:/review-claude-auth
       - review-ipc:/review-ipc
       - database-secret:/run/ocr-db:ro
+      # Default /dev/null: a missing host file would make Docker create a directory.
+      - ${OCR_GITLAB_CA_FILE:-/dev/null}:/run/ocr-ca/ca.crt:ro
     depends_on:
       postgres:
         condition: service_healthy
