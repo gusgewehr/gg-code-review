@@ -45,6 +45,7 @@ Um MR aberto numa instância GitLab self-hosted (com CA interna) é revisado e r
 - GitLab.com SaaS como alvo de teste — o foco é self-hosted (deve funcionar por consequência, mas não é critério de pronto)
 - Aprovação automática de MR — invariante do produto: nada aprova automaticamente
 - Benchmark (`ocr-bench`) para GitLab — benchmark é independente de hospedagem
+- Comentários multi-linha, sugestões inline e auto-resolver na v1 — o fluxo GitHub atual não tem; a v1 é só acesso ao GitLab com paridade
 
 ## Context
 
@@ -74,6 +75,8 @@ Um MR aberto numa instância GitLab self-hosted (com CA interna) é revisado e r
 | Uma instância GitLab por deploy via variável de host | Igual a `OCR_GH_HOST`; suficiente para o caso real | — Pending |
 | Polling, sem webhooks | Mesmo modelo do produto; não exige expor o server para o GitLab | — Pending |
 | Paridade completa na v1 (inline, status, resumo, indexação) | Critério de pronto é um MR real revisado com findings inline | — Pending |
+| Login do GitLab por formulário na UI (PAT repassado ao `glab` via stdin) | Escolha do usuário; mais conveniente que o terminal | — Pending |
+| Spike contra a instância real antes de construir GitLab | Pesquisa deixou formato de token, paginação, CA e `/versions` sem verificação | — Pending |
 | Construir para uso próprio primeiro; PR upstream é bônus | Usuário não quer depender da discussão com a BridgLabs agora | — Pending |
 
 ## Evolution
