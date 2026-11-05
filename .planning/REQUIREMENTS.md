@@ -39,10 +39,10 @@ Escopo da v1: dar acesso ao GitLab com paridade exata ao fluxo GitHub atual. Nad
 
 - [x] **PUB-01**: Findings validados são postados como discussões inline no diff do MR, na linha correta (adicionada, removida ou de contexto)
 - [x] **PUB-02**: Finding cuja posição o GitLab rejeita vira nota geral com o mesmo marcador, sem perder o finding
-- [ ] **PUB-03**: A nota de status no MR é criada uma vez e editada no lugar a cada etapa
-- [ ] **PUB-04**: O resumo da revisão é postado como nota, com a seção de sugestões quando Post suggestions está ligado
-- [ ] **PUB-05**: Republicar ou repetir após falha parcial não duplica comentários (marcadores `<!-- ocr-... -->`)
-- [ ] **PUB-06**: Se o MR recebeu push depois da revisão, a publicação é abortada em vez de postar em posições desatualizadas
+- [x] **PUB-03**: A nota de status no MR é criada uma vez e editada no lugar a cada etapa
+- [x] **PUB-04**: O resumo da revisão é postado como nota, com a seção de sugestões quando Post suggestions está ligado
+- [x] **PUB-05**: Republicar ou repetir após falha parcial não duplica comentários (marcadores `<!-- ocr-... -->`)
+- [x] **PUB-06**: Se o MR recebeu push depois da revisão, a publicação é abortada em vez de postar em posições desatualizadas
 - [x] **PUB-07**: Texto do modelo não dispara quick actions (`/merge`, `/approve`), menções ou auto-links no GitLab
 
 ### Indexação (IDX)
@@ -98,13 +98,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FORGE-03 | Fase 3 | Pendente |
 | IDX-01 | Fase 5 | Pendente |
 | IDX-02 | Fase 5 | Pendente |
-| PUB-01 | Fase 4 | Pendente |
-| PUB-02 | Fase 4 | Pendente |
-| PUB-03 | Fase 4 | Pendente |
-| PUB-04 | Fase 4 | Pendente |
-| PUB-05 | Fase 4 | Pendente |
-| PUB-06 | Fase 4 | Pendente |
-| PUB-07 | Fase 4 | Pendente |
+| PUB-01 | Fase 4 | Completo |
+| PUB-02 | Fase 4 | Completo |
+| PUB-03 | Fase 4 | Completo |
+| PUB-04 | Fase 4 | Completo |
+| PUB-05 | Fase 4 | Completo |
+| PUB-06 | Fase 4 | Completo |
+| PUB-07 | Fase 4 | Completo |
 | REPO-01 | Fase 3 | Pendente |
 | REPO-02 | Fase 3 | Pendente |
 | REPO-03 | Fase 3 | Pendente |
