@@ -20,6 +20,10 @@ export function forgeTerms(forge: ForgeKind) {
   };
 }
 
+// Stable references so consumers can use terms in hook deps.
+const GITHUB_TERMS = forgeTerms("github");
+const GITLAB_TERMS = forgeTerms("gitlab");
+
 // Only so the hook is valid without a provider: disabled, never fetches.
 const idleClient = new QueryClient();
 
@@ -29,11 +33,11 @@ export function useForgeTerms() {
     {
       queryKey: ["forge", "status"],
       queryFn: () => setupApi.forgeStatus(),
-      retry: false,
+      retry: 2,
       staleTime: Number.POSITIVE_INFINITY,
       enabled: client !== undefined,
     },
     client ?? idleClient,
   );
-  return forgeTerms(data?.provider === "gitlab" ? "gitlab" : "github");
+  return data?.provider === "gitlab" ? GITLAB_TERMS : GITHUB_TERMS;
 }
