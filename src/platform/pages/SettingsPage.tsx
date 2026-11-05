@@ -11,6 +11,7 @@ import { PlatformPage } from "../components/PlatformHeader";
 import { ProvidersPanel } from "../components/ProvidersPanel";
 import { formatError, repoOwner, toggleSet } from "../lib/utils";
 import { GitHubAuthRecovery } from "./settings/GitHubAuthRecovery";
+import { GitLabConnection } from "./settings/GitLabConnection";
 import { RepositorySelector } from "./settings/RepositorySelector";
 import { ReviewSettingsPanel } from "./settings/ReviewSettingsPanel";
 import { IntegrationRow, SettingsGroup, SettingsSection } from "./settings/SettingsControls";
@@ -35,6 +36,8 @@ export function SettingsPage() {
   }, [activeSection]);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const forgeQuery = useQuery({ queryKey: ["forge", "status"], queryFn: () => setupApi.forgeStatus(), retry: false });
+  const gitlabForge = forgeQuery.data?.provider === "gitlab" ? forgeQuery.data : null;
   const statusQuery = useQuery({ queryKey: ["setup", "status"], queryFn: () => setupApi.setupStatus() });
   const reviewSettingsQuery = useQuery({
     queryKey: ["setup", "settings", "review"],
@@ -395,7 +398,7 @@ export function SettingsPage() {
           {(reviewSettingsQuery.error || statusQuery.error || reposQuery.error) && (
             <DSError>{formatError(reviewSettingsQuery.error ?? statusQuery.error ?? reposQuery.error)}</DSError>
           )}
-          {authDisconnected && activeSection !== "integrations" && (
+          {authDisconnected && !gitlabForge && activeSection !== "integrations" && (
             <GitHubAuthRecovery
               prompt={authPrompt}
               doneMessage={authDone?.message}
@@ -482,7 +485,9 @@ export function SettingsPage() {
           />
           <SettingsSection id="integrations" activeSection={activeSection}>
             <SettingsGroup title="Integrations" description="Connected services used by OpenCodeReview.">
-              {status ? (
+              {gitlabForge ? (
+                <GitLabConnection status={gitlabForge} />
+              ) : status ? (
                 <>
                   <IntegrationRow
                     title="GitHub"

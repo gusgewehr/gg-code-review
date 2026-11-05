@@ -2,6 +2,7 @@ import type {
   AccountUsage,
   AiAccount,
   AiProvider,
+  ForgeStatus,
   GitHubAuthStatus,
   IndexGraph,
   Repo,
@@ -36,6 +37,10 @@ export const setupApiAccess = {
       events: Array<{ kind: string; code?: string; url?: string; success?: boolean; message?: string }>;
     }>("/auth/github/events", { headers });
   },
+  forgeStatus: () => http<ForgeStatus>("/forge/status"),
+  gitlabConnect: (token: string) =>
+    http<ForgeStatus>("/auth/gitlab/token", { method: "POST", body: JSON.stringify({ token }) }),
+  gitlabDisconnect: () => http<{ ok: boolean }>("/auth/gitlab/logout", { method: "POST", body: "{}" }),
   listAccounts: () => http<AiAccount[]>("/accounts"),
   accountUsage: () => http<AccountUsage[]>("/accounts/usage"),
   updateAccount: (id: number, update: { label?: string; enabled?: boolean }) =>

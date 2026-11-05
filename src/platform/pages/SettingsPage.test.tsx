@@ -23,6 +23,9 @@ vi.mock("../../services/setupApi", () => ({
     setupStatus: vi.fn(),
     claudeAuthStatus: vi.fn(),
     githubAuthLogout: vi.fn(),
+    forgeStatus: vi.fn(),
+    gitlabConnect: vi.fn(),
+    gitlabDisconnect: vi.fn(),
     saveSettingsBatch: vi.fn(),
   },
 }));
@@ -79,6 +82,14 @@ const workspace = {
   selected: true,
   monitorAll: false,
 };
+const githubForge = {
+  provider: "github",
+  host: "github.com",
+  loggedIn: false,
+  login: null,
+  expiresAt: null,
+  error: null,
+} as const;
 let client: QueryClient;
 let container: HTMLDivElement;
 let root: Root;
@@ -87,6 +98,7 @@ beforeEach(async () => {
   vi.clearAllMocks();
   vi.mocked(setupApi.setupStatus).mockReset();
   vi.mocked(setupApi.listAccounts).mockResolvedValue([]);
+  vi.mocked(setupApi.forgeStatus).mockReset().mockResolvedValue(githubForge);
   vi.mocked(setupApi.claudeAuthStatus).mockReset();
   vi.mocked(setupApi.saveSettingsBatch)
     .mockReset()
@@ -442,5 +454,24 @@ describe("settings workspace", () => {
     expect(button("Save changes").disabled).toBe(true);
     await inputValue(search!, "no-such-repository");
     expect(container.textContent).toContain("No repositories match this search.");
+  });
+
+  it("shows the GitLab panel and hides GitHub auth on a GitLab deploy", async () => {
+    client.setQueryData(["setup", "status"], {
+      ...client.getQueryData<object>(["setup", "status"]),
+      auth: { loggedIn: false, detail: "", login: null, host: "github.com" },
+    });
+    client.setQueryData(["forge", "status"], { ...githubForge, provider: "gitlab", host: "gitlab.example.com" });
+    await navigate("Integrations");
+    expect(container.textContent).toContain("GitLab connection");
+    expect(container.textContent).not.toContain("GitHub authorization");
+    expect(container.textContent).not.toContain("Connect GitHub");
+  });
+
+  it("shows no GitLab panel on GitHub or when forge status is unavailable", async () => {
+    await navigate("Integrations");
+    expect(container.textContent).not.toContain("GitLab connection");
+    client.setQueryData(["forge", "status"], undefined);
+    expect(container.textContent).not.toContain("GitLab connection");
   });
 });

@@ -136,6 +136,16 @@ export interface GitHubAuthStatus {
   detail: string;
 }
 
+/** Deploy forge connection state (`GET /forge/status`). */
+export interface ForgeStatus {
+  provider: "github" | "gitlab";
+  host: string;
+  loggedIn: boolean;
+  login: string | null;
+  expiresAt: string | null;
+  error: { code: string; message: string } | null;
+}
+
 /** Exactly what a review decision will post to GitHub — for a confirm/cancel step. */
 export interface SkillVersion {
   id: number;
