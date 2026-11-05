@@ -45,6 +45,12 @@ pub(crate) fn mark_pr_review_seen_http(state: &SharedState, pr_id: i64) -> Resul
     Ok(serde_json::json!({ "ok": true }))
 }
 
+fn gitlab_decision_error(forge: forge::Forge, decision: &str) -> Option<&'static str> {
+    (forge == forge::Forge::GitLab && matches!(decision, "approve_post" | "request_changes")).then_some(
+        "GitLab merge requests only receive comments from OpenCodeReview: approve and request changes are not available. Use Comment, Mark reviewed, or Skip instead.",
+    )
+}
+
 pub(crate) fn decide_review_http(
     request: &Request,
     state: &SharedState,
@@ -67,6 +73,9 @@ pub(crate) fn decide_review_http(
     })?;
     if run.status != "preview" {
         return Err("This review is not awaiting a decision.".to_string());
+    }
+    if let Some(text) = gitlab_decision_error(forge::current(), &payload.decision) {
+        return Err(text.to_string());
     }
     if matches!(payload.decision.as_str(), "approve_post" | "request_changes") {
         let author = with_db_raw(state, |db| db.pr_author(pr_id))?;
@@ -328,4 +337,22 @@ pub(crate) fn record_review_target_change(
         db.upsert_pending_action("manual_review_needed", repo_id, pr_id, "Manual review needed", reason)?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn gitlab_rejects_approve_and_request_changes_only() {
+        for decision in ["approve_post", "request_changes"] {
+            assert!(gitlab_decision_error(forge::Forge::GitLab, decision).is_some());
+        }
+        for decision in ["approve_post", "request_changes", "comment", "mark_reviewed", "skip"] {
+            assert!(gitlab_decision_error(forge::Forge::GitHub, decision).is_none());
+        }
+        for decision in ["comment", "mark_reviewed", "skip"] {
+            assert!(gitlab_decision_error(forge::Forge::GitLab, decision).is_none());
+        }
+    }
 }

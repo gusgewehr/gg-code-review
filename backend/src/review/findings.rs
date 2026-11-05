@@ -129,7 +129,17 @@ pub fn candidate_counts(audit_json: &str) -> Option<(i64, i64)> {
     )
 }
 
+/// GitLab has no request-changes review state, so that mode publishes as a comment.
+pub(crate) fn post_event_mode(forge: crate::forge::Forge, mode: &str) -> &str {
+    if forge == crate::forge::Forge::GitLab && mode == "request_changes" {
+        "comment"
+    } else {
+        mode
+    }
+}
+
 pub(crate) fn auto_post_event(mode: &str, comments_json: Option<&str>, body: Option<&str>) -> Option<&'static str> {
+    let mode = post_event_mode(crate::forge::current(), mode);
     match mode {
         "request_changes" if actionable(comments_json, body) => Some("REQUEST_CHANGES"),
         "comment" | "request_changes" => Some("COMMENT"),
@@ -465,6 +475,22 @@ pub fn validate_decisions(sources: &Value, decisions: Option<&str>, output: &str
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod post_event_mode_tests {
+    use super::post_event_mode;
+    use crate::forge::Forge;
+
+    #[test]
+    fn gitlab_never_requests_changes() {
+        assert_eq!(post_event_mode(Forge::GitLab, "request_changes"), "comment");
+        assert_eq!(post_event_mode(Forge::GitHub, "request_changes"), "request_changes");
+        for mode in ["comment", "off"] {
+            assert_eq!(post_event_mode(Forge::GitLab, mode), mode);
+            assert_eq!(post_event_mode(Forge::GitHub, mode), mode);
+        }
+    }
 }
 
 #[cfg(test)]

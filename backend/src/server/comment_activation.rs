@@ -4,8 +4,37 @@ pub(crate) fn activation_marker(full_name: &str, number: i64, installation: &str
     format!("<!-- ocr-activation:v1 repo={full_name} pr={number} installation={installation} -->")
 }
 
+fn queued_commit_url(forge: forge::Forge, host: &str, full_name: &str, head: &str) -> String {
+    match forge {
+        forge::Forge::GitLab => format!("https://{host}/{full_name}/-/commit/{head}"),
+        forge::Forge::GitHub => format!("https://{host}/{full_name}/commit/{head}"),
+    }
+}
+
 pub(crate) fn queued_for_review_text(full_name: &str, head: &str) -> String {
-    format!("### ⏳ OpenCodeReview is reviewing this pull request\n\nQueued commit [`{}`](https://{}/{full_name}/commit/{head}). The results will appear here when the review finishes.\n\n{}", short_sha(head), forge::gh_host(), ocr_footer())
+    let url = queued_commit_url(forge::current(), &forge::gh_host(), full_name, head);
+    format!(
+        "### ⏳ OpenCodeReview is reviewing this pull request
+
+Queued commit [`{}`]({url}). The results will appear here when the review finishes.
+
+{}",
+        short_sha(head),
+        ocr_footer()
+    )
+}
+
+#[cfg(test)]
+#[test]
+fn queued_commit_url_is_forge_aware() {
+    assert_eq!(
+        queued_commit_url(forge::Forge::GitLab, "gl.example.com", "g/sub/p", "abc"),
+        "https://gl.example.com/g/sub/p/-/commit/abc"
+    );
+    assert_eq!(
+        queued_commit_url(forge::Forge::GitHub, "ghe.example.com", "o/r", "abc"),
+        "https://ghe.example.com/o/r/commit/abc"
+    );
 }
 
 pub(crate) fn activation_confirmation_body(
