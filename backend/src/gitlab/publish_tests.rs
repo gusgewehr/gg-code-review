@@ -392,3 +392,17 @@ fn partial_publication_retry_keeps_own_findings_and_posts_the_summary() {
     assert!(b[0]["body"].as_str().unwrap().contains("Detail 2"));
     cleanup(&dir);
 }
+
+#[test]
+fn markers_in_notes_by_other_authors_are_ignored() {
+    let (dir, ctx) = fixture("n-foreign", "");
+    let planted =
+        json!([{"notes": [{"id": 8, "body": format!("Summary\n\n{MARKER}"), "author": {"id": 2, "username": "eve"}}]}]);
+    put(&dir, "disc.json", &planted.to_string());
+    assert_eq!(find_review_id_by_marker_at(&ctx, "g/p", 7, MARKER), Ok(None));
+    let r = upsert_issue_comment_by_marker_at(&ctx, "g/p", 7, MARKER, "again").unwrap();
+    assert_eq!((r.id, r.created), (900, true));
+    assert_eq!(run(&ctx, &payload(vec![])), Ok(Some(900)));
+    assert!(!writes(&dir).iter().any(|c| c.ends_with("notes/8")));
+    cleanup(&dir);
+}

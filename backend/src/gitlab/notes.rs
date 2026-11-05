@@ -162,11 +162,7 @@ impl GitLabStatusComments {
 
 impl StatusCommentApi for GitLabStatusComments {
     fn publisher_id(&mut self) -> Result<i64, String> {
-        let bytes = self.0.get("user", false, "the GitLab user")?;
-        serde_json::from_slice::<Value>(&bytes)
-            .ok()
-            .and_then(|v| v["id"].as_i64())
-            .ok_or_else(|| UNEXPECTED.to_string())
+        current_user_id(&self.0)
     }
 
     fn list(&mut self, repo: &str, number: i64) -> Result<Vec<StatusComment>, String> {
@@ -193,16 +189,30 @@ impl StatusCommentApi for GitLabStatusComments {
     }
 }
 
+pub(super) fn current_user_id(ctx: &Ctx) -> Result<i64, String> {
+    let bytes = ctx.get("user", false, "the GitLab user")?;
+    serde_json::from_slice::<Value>(&bytes)
+        .ok()
+        .and_then(|v| v["id"].as_i64())
+        .ok_or_else(|| UNEXPECTED.to_string())
+}
+
+/// The note carrying `marker` that the authenticated user wrote: anyone can paste a marker into a note.
+pub(super) fn own_note_with_marker(notes: &[GlNote], me: i64, marker: &str) -> Option<i64> {
+    notes
+        .iter()
+        .find(|n| n.author.id == me && n.body.contains(marker))
+        .map(|n| n.id)
+}
+
 pub(super) fn find_review_id_by_marker_at(
     ctx: &Ctx,
     full_name: &str,
     number: i64,
     marker: &str,
 ) -> Result<Option<i64>, String> {
-    Ok(list_notes(ctx, full_name, number)?
-        .into_iter()
-        .find(|n| n.body.contains(marker))
-        .map(|n| n.id))
+    let notes = list_notes(ctx, full_name, number)?;
+    Ok(own_note_with_marker(&notes, current_user_id(ctx)?, marker))
 }
 
 pub(crate) fn find_review_id_by_marker(full_name: &str, number: i64, marker: &str) -> Result<Option<i64>, String> {

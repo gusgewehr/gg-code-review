@@ -2,7 +2,7 @@
 
 use super::diffs::{diffs_at, find_file, position_for};
 use super::mrs::live_state_at;
-use super::notes::{list_notes, post_note, put_note, Ctx};
+use super::notes::{current_user_id, list_notes, own_note_with_marker, post_note, put_note, Ctx};
 use super::write::WriteError;
 use crate::github::extract_ocr_fingerprint;
 use serde_json::{json, Value};
@@ -121,7 +121,10 @@ pub(super) fn post_review_at(
         .map(|run| review_part_marker(run, commit_id));
     let notes = list_notes(ctx, full_name, number)?;
     let mut seen: HashSet<String> = notes.iter().filter_map(|n| extract_ocr_fingerprint(&n.body)).collect();
-    let existing_summary = marker.and_then(|m| notes.iter().find(|n| n.body.contains(m)).map(|n| n.id));
+    let existing_summary = match marker {
+        Some(m) => own_note_with_marker(&notes, current_user_id(ctx)?, m),
+        None => None,
+    };
     let files = diffs_at(&ctx.bin, &ctx.host, &ctx.dir, full_name, number, cancel)?;
 
     for comment in payload["comments"].as_array().into_iter().flatten() {
