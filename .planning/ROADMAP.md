@@ -115,7 +115,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 04-03-PLAN.md — GitLab publisher: notes layer, status notes, post_review (discussions, fallback, summary, idempotency, head abort)
+- [x] 04-03-PLAN.md — GitLab publisher: notes layer, status notes, post_review (discussions, fallback, summary, idempotency, head abort)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -143,5 +143,5 @@ Plans:
 | 1. Camada de provider (Forge) | 1/1 | Complete   | 2026-11-05 |
 | 2. Conexão com o GitLab | 5/5 | Complete   | 2026-11-05 |
 | 3. Leitura GitLab | 4/4 | Complete   | 2026-11-05 |
-| 4. Escrita GitLab | 2/4 | In Progress|  |
+| 4. Escrita GitLab | 3/4 | In Progress|  |
 | 5. Indexação, UI e docs | 0/? | Não iniciada | - |
