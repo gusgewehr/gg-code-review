@@ -77,6 +77,86 @@ pub(crate) fn init_from_env() -> Result<(Forge, Option<String>), String> {
     Ok((forge, host))
 }
 
+// Provider dispatch: these shadow the `crate::github::*` glob above, so callers stay unchanged.
+
+pub(crate) fn list_workspaces() -> Result<Vec<crate::db::WorkspaceInput>, String> {
+    match current() {
+        Forge::GitHub => crate::github::list_workspaces(),
+        Forge::GitLab => crate::gitlab::list_workspaces(),
+    }
+}
+
+pub(crate) fn list_repos(workspace_login: &str) -> Result<Vec<crate::db::RepoInput>, String> {
+    match current() {
+        Forge::GitHub => crate::github::list_repos(workspace_login),
+        Forge::GitLab => crate::gitlab::list_repos(workspace_login),
+    }
+}
+
+pub(crate) fn list_open_prs(full_name: &str) -> Result<Vec<crate::github::GhPullRequest>, String> {
+    match current() {
+        Forge::GitHub => crate::github::list_open_prs(full_name),
+        Forge::GitLab => crate::gitlab::list_open_prs(full_name),
+    }
+}
+
+pub(crate) fn list_open_prs_for_login(
+    full_name: &str,
+    login: &str,
+) -> Result<Vec<crate::github::GhPullRequest>, String> {
+    match current() {
+        Forge::GitHub => crate::github::list_open_prs_for_login(full_name, login),
+        Forge::GitLab => crate::gitlab::list_open_prs_for_login(full_name, login),
+    }
+}
+
+pub(crate) fn live_pr_state(full_name: &str, number: i64) -> Result<crate::github::LivePrState, String> {
+    match current() {
+        Forge::GitHub => crate::github::live_pr_state(full_name, number),
+        Forge::GitLab => crate::gitlab::live_pr_state(full_name, number),
+    }
+}
+
+pub(crate) fn live_pr_state_cancellable(
+    full_name: &str,
+    number: i64,
+    cancel: &std::sync::atomic::AtomicBool,
+) -> Result<crate::github::LivePrState, String> {
+    match current() {
+        Forge::GitHub => crate::github::live_pr_state_cancellable(full_name, number, cancel),
+        Forge::GitLab => crate::gitlab::live_pr_state_cancellable(full_name, number, cancel),
+    }
+}
+
+pub(crate) fn pr_description(full_name: &str, number: i64) -> Result<(String, String), String> {
+    match current() {
+        Forge::GitHub => crate::github::pr_description(full_name, number),
+        Forge::GitLab => crate::gitlab::pr_description(full_name, number),
+    }
+}
+
+pub(crate) fn current_login() -> Option<String> {
+    match current() {
+        Forge::GitHub => crate::github::current_login(),
+        Forge::GitLab => crate::gitlab::current_login(),
+    }
+}
+
+/// Author commands are GitHub-only.
+pub(crate) fn activation_pr(full_name: &str, number: i64) -> Result<Option<crate::github::GhPullRequest>, String> {
+    match current() {
+        Forge::GitHub => crate::github::activation_pr(full_name, number),
+        Forge::GitLab => Ok(None),
+    }
+}
+
+pub(crate) fn gh_host() -> String {
+    match current() {
+        Forge::GitHub => crate::github::gh_host(),
+        Forge::GitLab => host(),
+    }
+}
+
 pub(crate) fn require_github(what: &str) -> Result<(), String> {
     if current() == Forge::GitLab {
         return Err(format!("{what} is not supported yet on GitLab."));
