@@ -1,12 +1,12 @@
 ---
 phase: 02-conex-o-com-o-gitlab-self-hosted
 verified: 2026-11-05T00:00:00Z
-status: gaps_found
-score: 4/5 must-haves verified
+status: human_needed
+score: 5/5 must-haves verified (after gap closure 02-05)
 overrides_applied: 0
-gaps:
+gaps_closed:
   - truth: "glab is installed only in the server image, pinned version and verified checksum; runners get no glab/token/CA (AUTH-05, SC5)"
-    status: failed
+    status: closed (02-05, commit 0c29d1d; glab RUN built in isolation on debian:bookworm-slim: sha256 OK, glab 1.128.0)
     reason: "docker/Dockerfile line 73-74: the glab RUN instruction contains a literal newline inside printf '%s  /tmp/glab.tar.gz<newline>' with no trailing backslash. Docker ends the instruction at line 73 and parses line 74 (starting with a single quote) as an unknown instruction, so the server image build fails. The checksum step never runs."
     artifacts:
       - path: "docker/Dockerfile"
@@ -87,3 +87,11 @@ One blocker: the server Dockerfile glab install does not parse, so the image can
 
 _Verified: 2026-11-05_
 _Verifier: Claude (gsd-verifier)_
+
+
+## Re-verification after gap closure (02-05)
+
+- `docker/Dockerfile` glab `RUN` rewritten with `\` continuations (0c29d1d). `docker/test-gitlab-isolation.py` gained `check_dockerfile_continuations` (fails on the old file, passes now).
+- The glab `RUN` block was copied verbatim into a throwaway Dockerfile on `debian:bookworm-slim` and built (amd64): `/tmp/glab.tar.gz: OK`, `glab 1.128.0 (519ea19f7)`. The arm64 checksum was not exercised by a build.
+- REQUIREMENTS.md updated (6a2511a).
+- Status is now `human_needed`: only the live-GitLab items above remain.
