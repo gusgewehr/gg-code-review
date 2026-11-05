@@ -88,12 +88,38 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (filled by roadmapper) | | |
+| AUTH-01 | Fase 2 | Pendente |
+| AUTH-02 | Fase 2 | Pendente |
+| AUTH-03 | Fase 2 | Pendente |
+| AUTH-04 | Fase 2 | Pendente |
+| AUTH-05 | Fase 2 | Pendente |
+| FORGE-01 | Fase 2 | Pendente |
+| FORGE-02 | Fase 1 | Pendente |
+| FORGE-03 | Fase 3 | Pendente |
+| IDX-01 | Fase 5 | Pendente |
+| IDX-02 | Fase 5 | Pendente |
+| PUB-01 | Fase 4 | Pendente |
+| PUB-02 | Fase 4 | Pendente |
+| PUB-03 | Fase 4 | Pendente |
+| PUB-04 | Fase 4 | Pendente |
+| PUB-05 | Fase 4 | Pendente |
+| PUB-06 | Fase 4 | Pendente |
+| PUB-07 | Fase 4 | Pendente |
+| REPO-01 | Fase 3 | Pendente |
+| REPO-02 | Fase 3 | Pendente |
+| REPO-03 | Fase 3 | Pendente |
+| REPO-04 | Fase 3 | Pendente |
+| REPO-05 | Fase 3 | Pendente |
+| REV-01 | Fase 3 | Pendente |
+| REV-02 | Fase 3 | Pendente |
+| REV-03 | Fase 3 | Pendente |
+| UI-01 | Fase 5 | Pendente |
+| UI-02 | Fase 5 | Pendente |
 
 **Coverage:**
 - v1 requirements: 27 total
-- Mapped to phases: 0
-- Unmapped: 27 ⚠️
+- Mapped to phases: 27
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-11-05*
