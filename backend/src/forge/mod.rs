@@ -40,14 +40,8 @@ mod tests {
     #[test]
     fn github_urls_and_refspec_are_unchanged() {
         assert_eq!(current(), Forge::GitHub);
-        assert_eq!(
-            Forge::GitHub.commit_url("o/r", "abc123"),
-            "https://github.com/o/r/commit/abc123"
-        );
-        assert_eq!(
-            Forge::GitHub.review_url("o/r", 7, 42),
-            "https://github.com/o/r/pull/7#pullrequestreview-42"
-        );
+        assert_eq!(Forge::GitHub.commit_url("o/r", "abc123"), "https://github.com/o/r/commit/abc123");
+        assert_eq!(Forge::GitHub.review_url("o/r", 7, 42), "https://github.com/o/r/pull/7#pullrequestreview-42");
         assert_eq!(Forge::GitHub.pr_head_ref(7), "refs/pull/7/head");
     }
 }
