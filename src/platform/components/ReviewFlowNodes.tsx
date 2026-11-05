@@ -26,6 +26,7 @@ import { useEffect, useState } from "react";
 import { BrandLoadingIcon } from "../../components/BrandLoading";
 import { DSBadge } from "../../components/DesignSystem";
 import type { ReviewContextPlan } from "../../types";
+import { useForgeTerms } from "../lib/forgeTerms";
 import {
   chunkCountsLabel,
   flowStateLabel,
@@ -55,6 +56,7 @@ export function nodeStatus(data: ReviewFlowNodeData) {
 }
 
 function ReviewControlNode({ data }: NodeProps<ReviewFlowNode>) {
+  const terms = useForgeTerms();
   const control = data.control;
   if (!control) return null;
   const Icon = control.kind === "stop" ? Square : control.kind === "rerun" ? RotateCcw : Play;
@@ -64,7 +66,7 @@ function ReviewControlNode({ data }: NodeProps<ReviewFlowNode>) {
         type="button"
         className="nodrag nopan"
         aria-label={control.label}
-        title={control.disabled && !control.busy ? `${control.label} unavailable for this PR` : control.label}
+        title={control.disabled && !control.busy ? `${control.label} unavailable for this ${terms.short}` : control.label}
         disabled={control.disabled || control.busy}
         aria-busy={control.busy}
         onClick={(event) => {
@@ -231,6 +233,7 @@ function ReviewPhaseNode({ id, data, selected }: NodeProps<ReviewFlowNode>) {
 }
 
 export function ContextPhaseDetails({ context }: { context: ReviewContextPlan }) {
+  const terms = useForgeTerms();
   const selection = context.scopeSelection;
   const baseSync = selection?.mode === "base_sync";
   const contentReuse = selection?.mode === "content_reuse";
@@ -250,11 +253,11 @@ export function ContextPhaseDetails({ context }: { context: ReviewContextPlan })
         : baseSync
           ? [
               "Base synchronization",
-              "Base synchronization: reviews only affected files against the current PR base; unchanged files reuse verified coverage.",
+              `Base synchronization: reviews only affected files against the current ${terms.short} base; unchanged files reuse verified coverage.`,
             ]
           : context.incremental
-            ? ["Incremental review", "Incremental review: selects the PR-owned changes since the previous review."]
-            : ["Full review", "Full review: selects the PR diff against its immediate base."];
+            ? ["Incremental review", `Incremental review: selects the ${terms.short}-owned changes since the previous review.`]
+            : ["Full review", `Full review: selects the ${terms.short} diff against its immediate base.`];
   const short = (sha?: string | null) => sha?.slice(0, 12) ?? "Unavailable";
   const groups: ContextFileGroup[] = [
     ...(excluded.length ? [{ id: "excluded", title: "Excluded", files: excluded }] : []),
@@ -299,7 +302,7 @@ export function ContextPhaseDetails({ context }: { context: ReviewContextPlan })
           {mode[0]}
         </DSBadge>
         {selection && (
-          <span className="text-caption text-fg-muted tabular-nums">{`${context.changedFiles.length} file${context.changedFiles.length === 1 ? "" : "s"} to review · ${selection.reusedFiles.length} with reused coverage${excluded.length ? ` · ${excluded.length} excluded, not reviewed` : ""} · ${selection.fullPrFiles.length} in the PR`}</span>
+          <span className="text-caption text-fg-muted tabular-nums">{`${context.changedFiles.length} file${context.changedFiles.length === 1 ? "" : "s"} to review · ${selection.reusedFiles.length} with reused coverage${excluded.length ? ` · ${excluded.length} excluded, not reviewed` : ""} · ${selection.fullPrFiles.length} in the ${terms.short}`}</span>
         )}
       </div>
       <ContextFileGroups groups={groups} />

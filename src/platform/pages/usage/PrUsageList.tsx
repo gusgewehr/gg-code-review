@@ -6,6 +6,7 @@ import { cx, DSButton, DSEmptyState, DSError } from "../../../components/DesignS
 import { Tip } from "../../../components/Tip";
 import { setupApi } from "../../../services/setupApi";
 import type { UsageQuery } from "../../../types";
+import { useForgeTerms } from "../../lib/forgeTerms";
 import { formatFlowDuration } from "../../lib/reviewFlow";
 import { toggleSet } from "../../lib/utils";
 import { compactTokens, pct, usageError } from "./format";
@@ -18,9 +19,10 @@ const columns =
 
 /** Findings the review kept, with how many were published when that differs. */
 export function FindingsCell({ found, posted }: { found: number; posted: number }) {
+  const terms = useForgeTerms();
   if (found === 0 && posted === 0) return <span className="text-fg-subtle">–</span>;
   return (
-    <Tip content={`${found} found by the review · ${posted} posted to GitHub`} className="justify-end">
+    <Tip content={`${found} found by the review · ${posted} posted to ${terms.platform}`} className="justify-end">
       <span className="text-fg">{found.toLocaleString()}</span>
       {posted !== found && <span className="whitespace-pre text-fg-subtle"> · {posted.toLocaleString()} posted</span>}
     </Tip>
@@ -43,6 +45,7 @@ export function ShareBar({ tokens, total }: { tokens: number; total: number }) {
 }
 
 export function PrUsageList({ query, totalTokens, live }: { query: UsageQuery; totalTokens: number; live: boolean }) {
+  const terms = useForgeTerms();
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const prs = useInfiniteQuery({
     queryKey: ["usage", "prs", query.days, query.repoId, query.tz],
@@ -53,14 +56,14 @@ export function PrUsageList({ query, totalTokens, live }: { query: UsageQuery; t
     refetchInterval: live ? 5000 : false,
   });
   if (prs.isError && !prs.data) return <DSError>{usageError(prs.error)}</DSError>;
-  if (!prs.data) return <BrandLoading size="compact" label="Loading pull requests…" />;
+  if (!prs.data) return <BrandLoading size="compact" label={`Loading ${terms.prs}…`} />;
   const rows = prs.data.pages.flatMap((page) => page.items);
-  if (!rows.length) return <DSEmptyState>No pull requests ran a review in this period.</DSEmptyState>;
+  if (!rows.length) return <DSEmptyState>{`No ${terms.prs} ran a review in this period.`}</DSEmptyState>;
   const total = prs.data.pages.at(-1)?.total ?? rows.length;
   return (
     <div className="flex flex-col">
       <div className={cx(columns, "border-b border-line px-2 pb-2 text-caption text-fg-subtle")} aria-hidden="true">
-        <span>Pull request</span>
+        <span>{terms.pr.replace(/^./, (c) => c.toUpperCase())}</span>
         <span className="max-md:hidden">Runs</span>
         <span className="text-right">Tokens</span>
         <span className="max-md:hidden">Share</span>

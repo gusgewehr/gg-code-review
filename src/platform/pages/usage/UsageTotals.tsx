@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { cx } from "../../../components/DesignSystem";
 import { Hint } from "../../../components/Tip";
 import type { UsageTotals as Totals } from "../../../types";
+import { useForgeTerms } from "../../lib/forgeTerms";
 import { formatFlowDuration } from "../../lib/reviewFlow";
 import { compactTokens, pct } from "./format";
 
@@ -31,19 +32,20 @@ function Total({
 }
 
 export function UsageTotals({ totals }: { totals: Totals }) {
+  const terms = useForgeTerms();
   const overheadShare = totals.tokens > 0 ? totals.overheadTokens / totals.tokens : 0;
   return (
     <dl className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3 lg:grid-cols-5">
       <Total
         label="Runs"
         value={totals.runs.toLocaleString()}
-        note={`on ${totals.prs.toLocaleString()} ${totals.prs === 1 ? "PR" : "PRs"}`}
+        note={`on ${totals.prs.toLocaleString()} ${totals.prs === 1 ? terms.short : terms.shorts}`}
       />
       <Total
         label="Findings"
         value={totals.findingsFound.toLocaleString()}
         note={`${totals.findings.toLocaleString()} posted · ${totals.questionsFound.toLocaleString()} ${totals.questionsFound === 1 ? "question" : "questions"}`}
-        hint="Findings the reviews kept, published or not; posted counts the ones published to GitHub."
+        hint={`Findings the reviews kept, published or not; posted counts the ones published to ${terms.platform}.`}
       />
       <Total
         label="Median time"

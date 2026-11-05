@@ -4,6 +4,7 @@ import { Hint } from "../../../components/Tip";
 import type { UsageGroupRow, UsageQuery, UsageReport } from "../../../types";
 import { ProviderGlyph } from "../../components/AccountsPanel";
 import { ArrowTabs } from "../../components/ArrowTabs";
+import { useForgeTerms } from "../../lib/forgeTerms";
 import { formatFlowDuration } from "../../lib/reviewFlow";
 import { attributedRows, compactTokens, isProvider, UNATTRIBUTED_HINT } from "./format";
 import { FindingsCell, PrUsageList, ShareBar } from "./PrUsageList";
@@ -79,10 +80,11 @@ function GroupTable({
 }
 
 export function UsageBreakdown({ report, query }: { report: UsageReport; query: UsageQuery }) {
+  const terms = useForgeTerms();
   const [tab, setTab] = useState<TabId>("prs");
   const showAccounts = attributedRows(report.byAccount).length >= 2;
   const tabs = [
-    { id: "prs", label: "Pull requests" },
+    { id: "prs", label: terms.Prs },
     { id: "repos", label: "Repositories" },
     { id: "models", label: "Models" },
     ...(showAccounts ? [{ id: "accounts", label: "Accounts" }] : []),

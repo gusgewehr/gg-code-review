@@ -1,6 +1,7 @@
 import { Hint, Tip } from "../../../components/Tip";
 import type { UsageReport } from "../../../types";
 import { ProviderGlyph } from "../../components/AccountsPanel";
+import { useForgeTerms } from "../../lib/forgeTerms";
 import { attributedRows, compactTokens, isProvider, pct } from "./format";
 
 const plural = (count: number, word: string) => `${count.toLocaleString()} ${word}${count === 1 ? "" : "s"}`;
@@ -35,6 +36,7 @@ function MixRow({
 }
 
 export function UsageHero({ report }: { report: UsageReport }) {
+  const terms = useForgeTerms();
   const { totals } = report;
   const providers = attributedRows(report.byProvider);
   return (
@@ -47,7 +49,7 @@ export function UsageHero({ report }: { report: UsageReport }) {
         </Tip>
         <p className="flex flex-wrap items-center gap-x-1.5 text-small text-fg-muted">
           <span>
-            tokens · {plural(totals.runs, "run")} on {plural(totals.prs, "PR")}
+            tokens · {plural(totals.runs, "run")} on {plural(totals.prs, terms.short)}
           </span>
           {totals.runsWithoutUsage > 0 && (
             <span className="inline-flex items-center gap-1 text-fg-subtle">

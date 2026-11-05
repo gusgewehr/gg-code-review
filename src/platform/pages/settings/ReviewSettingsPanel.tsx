@@ -1,4 +1,5 @@
 import { BrandLoading } from "../../../components/BrandLoading";
+import { useForgeTerms } from "../../lib/forgeTerms";
 import { SettingChoice, SettingRow, SettingsGroup, SettingsSection, TokenEditor } from "./SettingsControls";
 import type { SettingsForm, SettingsSectionId } from "./settingsForm";
 
@@ -17,29 +18,30 @@ export function ReviewSettingsPanel({
   keywordDraft: string;
   onKeywordDraft: (value: string) => void;
 }) {
+  const terms = useForgeTerms();
   if (!settings) return activeSection === "selection" ? <BrandLoading label="Loading review settings…" /> : null;
   const setArray = (key: string, items: string[]) =>
     onSave(key, JSON.stringify(items.map((item) => item.trim()).filter(Boolean)));
   return (
     <SettingsSection id="selection" activeSection={activeSection}>
-      <SettingsGroup title="PR selection" description="Control which PRs enter the review queue.">
+      <SettingsGroup title={`${terms.short} selection`} description={`Control which ${terms.shorts} enter the review queue.`}>
         <SettingChoice
           title="Review scope"
-          description="Use assignments and GitHub teams, or review all open PRs."
+          description={`Use assignments and ${terms.platform} teams, or review all open ${terms.shorts}.`}
           options={["true", "false"]}
-          labels={{ true: "Assigned", false: "All PRs" }}
+          labels={{ true: "Assigned", false: `All ${terms.shorts}` }}
           value={String(settings.reviewAssignedOnly)}
           disabled={loading}
           onChange={(value) => onSave("review_assigned_only", value)}
         />
         <SettingRow
-          title="Maximum PR files"
-          description="Skip PRs that change more files than this limit. The default is 100; deletions count, build output, vendored and generated files do not."
+          title={`Maximum ${terms.short} files`}
+          description={`Skip ${terms.shorts} that change more files than this limit. The default is 100; deletions count, build output, vendored and generated files do not.`}
         >
           <input
             className="settings-number-input h-9 w-24 rounded-md border border-line bg-surface px-3 text-small text-fg shadow-card outline-none focus:border-brand focus:ring-3 focus:ring-brand/15"
             type="number"
-            aria-label="Maximum PR files"
+            aria-label={`Maximum ${terms.short} files`}
             min={1}
             value={settings.reviewMaxFiles}
             disabled={loading}
@@ -82,7 +84,7 @@ export function ReviewSettingsPanel({
           onChange={(value) => onSave("review_suggestions_enabled", value)}
         />
       </SettingsGroup>
-      <SettingsGroup title="Title filters" description="Skip low-value PRs by keyword.">
+      <SettingsGroup title="Title filters" description={`Skip low-value ${terms.shorts} by keyword.`}>
         <TokenEditor
           label="Ignored keywords"
           placeholder="renovate, chore(deps)"

@@ -9,6 +9,7 @@ import type { Repo } from "../../types";
 import { MultiSelect } from "../components/MultiSelect";
 import { PlatformPage } from "../components/PlatformHeader";
 import { ProvidersPanel } from "../components/ProvidersPanel";
+import { useForgeTerms } from "../lib/forgeTerms";
 import { formatError, repoOwner, toggleSet } from "../lib/utils";
 import { GitHubAuthRecovery } from "./settings/GitHubAuthRecovery";
 import { GitLabConnection } from "./settings/GitLabConnection";
@@ -36,6 +37,7 @@ export function SettingsPage() {
   }, [activeSection]);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const terms = useForgeTerms();
   const forgeQuery = useQuery({ queryKey: ["forge", "status"], queryFn: () => setupApi.forgeStatus(), retry: false });
   const gitlabForge = forgeQuery.data?.provider === "gitlab" ? forgeQuery.data : null;
   const statusQuery = useQuery({ queryKey: ["setup", "status"], queryFn: () => setupApi.setupStatus() });
@@ -378,7 +380,7 @@ export function SettingsPage() {
                 onClick={() => setActiveSection(id)}
               >
                 <Icon className="size-4" />
-                <span>{title}</span>
+                <span>{id === "selection" ? `${terms.short} selection` : title}</span>
                 {dirtySections.has(id) && (
                   <span
                     className="settings-unsaved-dot ml-auto size-1.5 shrink-0 rounded-full bg-amber-500"
