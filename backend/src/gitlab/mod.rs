@@ -7,7 +7,11 @@ pub(crate) mod ca;
 mod diffs;
 mod git_auth;
 mod mrs;
+#[allow(dead_code)] // consumed by forge in 04-04
+mod notes;
 mod projects;
+#[allow(dead_code)] // consumed by forge in 04-04
+mod publish;
 #[allow(dead_code)] // consumed by publish/notes (04-03), allow removed in 04-04
 mod sanitize;
 #[cfg(all(test, unix))]
@@ -23,6 +27,10 @@ pub(crate) use mrs::{
 #[allow(unused_imports)]
 pub(crate) use projects::valid_full_name;
 pub(crate) use projects::{list_all, list_repos, list_workspaces};
+
+#[cfg(all(test, unix))]
+#[path = "publish_tests.rs"]
+mod publish_tests;
 
 #[cfg(test)]
 #[path = "read_tests.rs"]

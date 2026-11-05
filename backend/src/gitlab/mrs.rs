@@ -86,7 +86,7 @@ pub(super) fn map_state(state: &str) -> String {
     }
 }
 
-fn mr_endpoint(full_name: &str, number: i64) -> String {
+pub(super) fn mr_endpoint(full_name: &str, number: i64) -> String {
     format!("projects/{}/merge_requests/{number}", enc(full_name))
 }
 

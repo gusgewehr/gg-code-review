@@ -29,6 +29,7 @@ pub(crate) use auth::{
     apply_gh_host, apply_git_https_auth, basic_auth_for, create_private_dir, gh_host_detected, is_valid_gh_host,
 };
 pub use auth::{auth_status, current_login, gh_host, run_auth_flow, sign_out};
+pub(crate) use comments::{dedupe_against, extract_ocr_fingerprint, ExistingOcrComment, IssueCommentUpsert};
 pub use comments::{
     dedupe_review_comments, find_review_id_by_marker, post_review, prepare_review, upsert_issue_comment_by_marker,
     DedupeResult, PreparedReview,
@@ -43,9 +44,7 @@ pub use repo::{
     list_open_prs, list_open_prs_for_login, list_repos, list_workspaces, live_pr_state, live_pr_state_cancellable,
     LivePrState,
 };
-#[cfg(test)]
-pub(crate) use status_comments::StatusComment;
-pub(crate) use status_comments::{GitHubStatusComments, StatusCommentApi};
+pub(crate) use status_comments::{GitHubStatusComments, StatusComment, StatusCommentApi};
 pub(crate) use transport::{gh_capture_cancellable, gh_json, iso8601_to_epoch_ms, run_raw};
 
 #[cfg(test)]

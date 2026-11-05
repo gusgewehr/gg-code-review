@@ -312,7 +312,7 @@ pub(crate) struct ExistingOcrComment {
 }
 
 impl ExistingOcrComment {
-    fn from_github(comment: &serde_json::Value) -> Option<Self> {
+    pub(crate) fn from_github(comment: &serde_json::Value) -> Option<Self> {
         let body = comment.get("body").and_then(|v| v.as_str()).unwrap_or_default();
         if !is_ocr_comment(body) {
             return None;
