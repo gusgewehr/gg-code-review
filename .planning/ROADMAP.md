@@ -137,9 +137,9 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 05-01-PLAN.md — Backend: remove GitLab reindex gate, clone_url helper + test, IDX-02 proof, GitLab sign-in copy
-- [ ] 05-02-PLAN.md — Frontend: forgeTerms/useForgeTerms and MR/!iid/GitLab vocabulary across reviews, usage, settings
-- [ ] 05-03-PLAN.md — docs/gitlab.md, README pointer, release note in changelog.d
+- [x] 05-01-PLAN.md — Backend: remove GitLab reindex gate, clone_url helper + test, IDX-02 proof, GitLab sign-in copy
+- [x] 05-02-PLAN.md — Frontend: forgeTerms/useForgeTerms and MR/!iid/GitLab vocabulary across reviews, usage, settings
+- [x] 05-03-PLAN.md — docs/gitlab.md, README pointer, release note in changelog.d
 **UI hint**: yes
 
 ## Tabela de progresso

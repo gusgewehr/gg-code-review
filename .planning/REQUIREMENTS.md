@@ -47,13 +47,13 @@ Escopo da v1: dar acesso ao GitLab com paridade exata ao fluxo GitHub atual. Nad
 
 ### Indexação (IDX)
 
-- [ ] **IDX-01**: A indexação de repositórios funciona para projetos GitLab
-- [ ] **IDX-02**: Skills funcionam para projetos GitLab
+- [x] **IDX-01**: A indexação de repositórios funciona para projetos GitLab
+- [x] **IDX-02**: Skills funcionam para projetos GitLab
 
 ### Interface e docs (UI)
 
-- [ ] **UI-01**: Num deploy GitLab, a UI usa termos do GitLab (merge request, `!iid`) e links para a instância
-- [ ] **UI-02**: Há documentação de como configurar um deploy GitLab (host, CA, login) e uma release note em `changelog.d/`
+- [x] **UI-01**: Num deploy GitLab, a UI usa termos do GitLab (merge request, `!iid`) e links para a instância
+- [x] **UI-02**: Há documentação de como configurar um deploy GitLab (host, CA, login) e uma release note em `changelog.d/`
 
 ## v2 Requirements
 
@@ -96,8 +96,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FORGE-01 | Fase 2 | Implementado |
 | FORGE-02 | Fase 1 | Pendente |
 | FORGE-03 | Fase 3 | Pendente |
-| IDX-01 | Fase 5 | Pendente |
-| IDX-02 | Fase 5 | Pendente |
+| IDX-01 | Fase 5 | Implementado |
+| IDX-02 | Fase 5 | Implementado |
 | PUB-01 | Fase 4 | Completo |
 | PUB-02 | Fase 4 | Completo |
 | PUB-03 | Fase 4 | Completo |
@@ -113,8 +113,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | REV-01 | Fase 3 | Pendente |
 | REV-02 | Fase 3 | Pendente |
 | REV-03 | Fase 3 | Pendente |
-| UI-01 | Fase 5 | Pendente |
-| UI-02 | Fase 5 | Pendente |
+| UI-01 | Fase 5 | Implementado |
+| UI-02 | Fase 5 | Implementado |
 
 **Coverage:**
 - v1 requirements: 27 total
