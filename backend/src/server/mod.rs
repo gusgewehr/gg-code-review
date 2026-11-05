@@ -255,7 +255,14 @@ fn resolve_persisted_token(data_dir: &Path) -> Option<String> {
     Some(token)
 }
 
+static BOOT_FORGE: std::sync::OnceLock<(crate::forge::Forge, Option<String>)> = std::sync::OnceLock::new();
+
 pub fn run_from_env() -> Result<(), String> {
+    // Env-only setup; must precede ServerConfig::from_env (starts DB pool threads).
+    let data_dir = std::env::var("OCR_DATA_DIR").unwrap_or_else(|_| "data".to_string());
+    crate::gitlab::ca::prepare(std::path::Path::new(&data_dir))?;
+    let boot = crate::forge::init_from_env()?;
+    let _ = BOOT_FORGE.set(boot);
     run(ServerConfig::from_env()?)
 }
 
@@ -264,6 +271,13 @@ pub fn run(mut config: ServerConfig) -> Result<(), String> {
     let instance = Instance::new()?;
     config.db = config.db.with_instance(&instance.id);
     let db = config.db.open()?;
+    match BOOT_FORGE.get() {
+        Some((forge, Some(host))) => {
+            crate::forge::guard::enforce(&db, *forge, Some(host))?;
+            println!("Forge: {} on {host}", crate::forge::provider_name(*forge));
+        }
+        _ => println!("Forge: GitHub host not detected; forge pinning skipped"),
+    }
     db.register_instance(&instance.id, &instance.host)?;
     // Only work whose instance is gone: other instances sharing the database keep theirs.
     db.reconcile_interrupted_jobs()?;
@@ -274,7 +288,8 @@ pub fn run(mut config: ServerConfig) -> Result<(), String> {
     cleanup_runtime_artifacts();
 
     let state = Arc::new(ServerState::new(config.clone()));
-    if config.auto_reindex {
+    let github = crate::forge::current() == crate::forge::Forge::GitHub;
+    if config.auto_reindex && github {
         start_reindex_worker(state.clone());
     }
     start_instance_heartbeat(config.db.clone(), instance);
@@ -283,7 +298,9 @@ pub fn run(mut config: ServerConfig) -> Result<(), String> {
     start_untracked_run_sweeper(state.clone());
     start_review_result_reconciliation(config.db.clone(), config.repos_dir.clone());
     start_review_request_restoration(config.db.clone());
-    start_poll_scheduler(state.clone());
+    if github {
+        start_poll_scheduler(state.clone());
+    }
     start_runtime_cleanup_worker();
     crate::review_archive::retention::start_archive_retention_worker(state.clone());
 

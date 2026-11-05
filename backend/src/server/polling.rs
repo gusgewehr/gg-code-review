@@ -69,6 +69,7 @@ pub(crate) fn create_skill_version_http(request: &Request, state: &SharedState) 
 }
 
 pub(crate) fn poll_reviews(state: &SharedState) -> Result<serde_json::Value, String> {
+    forge::require_github("Pull request polling")?;
     if state.poll_running.swap(true, Ordering::Relaxed) {
         return with_db_read(state, |db| db.poll_status());
     }

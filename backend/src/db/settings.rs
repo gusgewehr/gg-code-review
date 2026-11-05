@@ -403,7 +403,7 @@ impl Database {
         }
     }
 
-    pub(super) fn ensure_setting_default(&self, key: &str, value: &str) -> Result<(), String> {
+    pub(crate) fn ensure_setting_default(&self, key: &str, value: &str) -> Result<(), String> {
         self.conn
             .execute(
                 "INSERT INTO settings (key, value, updated_at) VALUES ($1, $2, (EXTRACT(EPOCH FROM now()) * 1000)::BIGINT) ON CONFLICT DO NOTHING",

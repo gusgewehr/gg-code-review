@@ -100,10 +100,15 @@ pub(crate) fn apply_gh_config_dir(command: &mut Command) {
 /// `gh auth status`, then `github.com`. This lets OpenCodeReview target GitHub
 /// Enterprise (e.g. `ghe.example.com`) instead of assuming public github.com.
 pub fn gh_host() -> String {
-    GH_HOST.get_or_init(detect_gh_host).clone()
+    gh_host_detected().unwrap_or_else(|| "github.com".to_string())
 }
 
-pub(crate) fn detect_gh_host() -> String {
+/// Detected host, or None when neither env nor `gh auth status` names one (cached).
+pub(crate) fn gh_host_detected() -> Option<String> {
+    GH_HOST.get_or_init(detected_gh_host).clone()
+}
+
+pub(crate) fn detected_gh_host() -> Option<String> {
     for key in ["OCR_GH_HOST", "GH_HOST"] {
         if let Ok(value) = std::env::var(key) {
             let value = value.trim();
@@ -113,7 +118,7 @@ pub(crate) fn detect_gh_host() -> String {
             // could send the gh token to an unintended host. Skip invalid input
             // and fall back to gh's own resolved host.
             if is_valid_gh_host(value) {
-                return value.to_string();
+                return Some(value.to_string());
             }
         }
     }
@@ -129,10 +134,10 @@ pub(crate) fn detect_gh_host() -> String {
             String::from_utf8_lossy(&output.stderr)
         );
         if let Some(host) = parse_gh_host(&text) {
-            return host;
+            return Some(host);
         }
     }
-    "github.com".to_string()
+    None
 }
 
 pub(crate) fn parse_gh_host(text: &str) -> Option<String> {

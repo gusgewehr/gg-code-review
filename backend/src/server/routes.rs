@@ -149,7 +149,14 @@ pub(crate) fn health(state: &SharedState) -> Result<serde_json::Value, String> {
         ok: true,
         message: "OpenCodeReview server ready".to_string(),
         repos_dir: state.config.repos_dir.to_string_lossy().to_string(),
-        github: github_status(),
+        github: if forge::current() == forge::Forge::GitLab {
+            ToolStatus {
+                ok: false,
+                detail: "GitHub is not used on this GitLab deploy.".to_string(),
+            }
+        } else {
+            github_status()
+        },
         git: command_status("git", &["--version"]),
         claude: command_status("claude", &["--version"]),
     };
@@ -317,6 +324,7 @@ pub(crate) fn get_archive_storage_status(state: &SharedState) -> Result<serde_js
 }
 
 pub(crate) fn refresh_github_workspaces(state: &SharedState) -> Result<serde_json::Value, String> {
+    forge::require_github("GitHub workspace refresh")?;
     let workspaces = forge::list_workspaces()?;
     with_db_raw(state, |db| db.upsert_workspaces(&workspaces))?;
     // One gh call per workspace; run them side by side so the slowest owner sets the wait.

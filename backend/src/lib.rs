@@ -3,6 +3,7 @@ pub mod bench;
 pub mod db;
 mod forge;
 pub mod github;
+mod gitlab;
 pub mod indexer;
 pub mod local;
 mod path_kinds;

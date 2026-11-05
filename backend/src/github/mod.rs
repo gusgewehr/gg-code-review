@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 static GH_LOGIN: Mutex<Option<String>> = Mutex::new(None);
 static GH_TEAM_SLUGS: Mutex<Option<HashSet<String>>> = Mutex::new(None);
-static GH_HOST: OnceLock<String> = OnceLock::new();
+static GH_HOST: OnceLock<Option<String>> = OnceLock::new();
 static GH_CONFIG_DIR: OnceLock<Option<PathBuf>> = OnceLock::new();
 static GIT_TOKEN: OnceLock<String> = OnceLock::new();
 
@@ -25,7 +25,7 @@ mod review_requests;
 mod status_comments;
 mod transport;
 
-pub(crate) use auth::{apply_gh_host, apply_git_https_auth, is_valid_gh_host};
+pub(crate) use auth::{apply_gh_host, apply_git_https_auth, gh_host_detected, is_valid_gh_host};
 pub use auth::{auth_status, current_login, gh_host, run_auth_flow, sign_out};
 pub use comments::{
     dedupe_review_comments, find_review_id_by_marker, post_review, prepare_review, upsert_issue_comment_by_marker,
