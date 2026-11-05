@@ -1,7 +1,8 @@
 import type { Repo } from "../../types";
 
 export function repoOwner(repo: Repo) {
-  return repo.fullName.split("/")[0] || repo.owner;
+  const i = repo.fullName.lastIndexOf("/");
+  return i > 0 ? repo.fullName.slice(0, i) : repo.owner;
 }
 
 export function toggleSet<T>(current: Set<T>, value: T) {

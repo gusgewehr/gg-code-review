@@ -4,11 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { friendlyError } from "../components/AccessConnect";
 import { BrandLoading } from "../components/BrandLoading";
 import { cx } from "../components/DesignSystem";
+import { repoOwner } from "../platform/lib/utils";
 import { setupApi } from "../services/setupApi";
 import type { Repo } from "../types";
 import { ctaPrimary, ctaSecondary, StepActions, StepHeader } from "./OnboardingParts";
-
-const owner = (repo: Repo) => repo.fullName.split("/")[0] || repo.owner;
 
 /** Every repository the GitHub sign-in can see, across all of its organizations, in one list. */
 export function ReposStep({ onBack, onSaved }: { onBack: () => void; onSaved: (count: number) => void }) {
@@ -31,14 +30,15 @@ export function ReposStep({ onBack, onSaved }: { onBack: () => void; onSaved: (c
       setSelected(new Set(repos.data.filter((repo) => repo.subscriptionEnabled).map((repo) => repo.id)));
   }, [repos.data, selected]);
   const chosen = selected ?? new Set<number>();
-  const owners = [...new Set(all.map(owner))];
+  const owners = [...new Set(all.map(repoOwner))];
   const visible = all.filter(
     (repo) =>
-      (org === "all" || owner(repo) === org) && (!search || repo.fullName.toLowerCase().includes(search.toLowerCase())),
+      (org === "all" || repoOwner(repo) === org) &&
+      (!search || repo.fullName.toLowerCase().includes(search.toLowerCase())),
   );
   const save = useMutation({
     mutationFn: async () => {
-      await setupApi.saveSelectedWorkspaces([...new Set(all.filter((repo) => chosen.has(repo.id)).map(owner))]);
+      await setupApi.saveSelectedWorkspaces([...new Set(all.filter((repo) => chosen.has(repo.id)).map(repoOwner))]);
       // Only repositories whose state changed: each request is a round trip, and with hundreds of
       // repositories saving every one made the first save take minutes.
       const changed = all.filter((repo) => chosen.has(repo.id) !== repo.subscriptionEnabled);
