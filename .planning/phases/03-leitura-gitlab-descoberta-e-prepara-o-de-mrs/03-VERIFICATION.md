@@ -61,3 +61,20 @@ Note: the traceability table in `.planning/REQUIREMENTS.md` (lines 98-115) still
 ## Gaps Summary
 
 No code gaps found. The only open items are the real-instance checks above.
+
+## Final Gate Results (2026-11-05, after code-review fixes up to ad8b850)
+
+| Check | Result |
+|-------|--------|
+| `cargo fmt --all --check && cargo clippy --workspace --all-targets --locked -- -D warnings` | pass |
+| `~/rusttest.sh` (full workspace, postgres:17) | pass: 684 passed, 0 failed, 15 ignored |
+| `pnpm test` | 20 failed / 278 passed / 7 skipped = baseline (localStorage.clear under Node 25 + `scripts/site/seo.test.ts` on the CRLF checkout); no failures in phase-3 files |
+| `tsc --noEmit -p .` | pass |
+| `biome lint src` | pass |
+| `node scripts/check-file-sizes.mjs` | pass (303 files) |
+| `python -B docker/test-gitlab-isolation.py` | pass |
+| `pnpm changelog:check` | pass |
+
+Code review: iteration 1 found 2 blockers + 3 warnings (all fixed: a9a01a2, 04a6ae2, 68984e6, a9a6812, a17224f); iteration 2 found 1 new blocker (deleted target branch stalled project polling) + 1 warning (paginated listing timeout), both fixed (c28cd02, ad8b850). No third re-review was run; info items remain open in 03-REVIEW.md.
+
+Note: the full Rust run's client was reaped by Claude Code for low memory; the test container kept running and its output was read via `docker logs -f`.
