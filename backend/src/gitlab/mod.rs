@@ -3,9 +3,17 @@
 mod api;
 mod auth;
 pub(crate) mod ca;
+#[allow(dead_code)] // consumed by publish/notes (04-03), allow removed in 04-04
+mod diffs;
 mod git_auth;
 mod mrs;
 mod projects;
+#[allow(dead_code)] // consumed by publish/notes (04-03), allow removed in 04-04
+mod sanitize;
+#[cfg(all(test, unix))]
+mod test_fake;
+#[allow(dead_code)] // consumed by publish/notes (04-03), allow removed in 04-04
+mod write;
 pub(crate) use auth::{login, logout, parse_token_body, status, ForgeStatus};
 pub(crate) use git_auth::apply_git_auth;
 pub(crate) use mrs::{

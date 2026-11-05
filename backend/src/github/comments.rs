@@ -22,6 +22,10 @@ impl Drop for PreparedReview {
 }
 
 impl PreparedReview {
+    pub(crate) fn path(&self) -> &std::path::Path {
+        &self.path
+    }
+
     pub(crate) fn in_directory(payload_json: &str, directory: &std::path::Path) -> Result<Self, String> {
         static NEXT_PAYLOAD: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
         Self::with_paths(payload_json, || {

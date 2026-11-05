@@ -33,6 +33,7 @@ pub use comments::{
     dedupe_review_comments, find_review_id_by_marker, post_review, prepare_review, upsert_issue_comment_by_marker,
     DedupeResult, PreparedReview,
 };
+pub(crate) use pr::parse_hunk_starts;
 #[cfg(test)]
 pub(crate) use pr::parse_pr_file_pages;
 #[cfg(not(test))]
