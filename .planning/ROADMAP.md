@@ -73,7 +73,21 @@ Plans:
   4. A preparação busca `refs/merge-requests/<iid>/head` sem checkout, usa base, head e merge-base vivos, falha se o fetch falhar e calcula o diff localmente, sem truncar MRs grandes
   5. Um MR vindo de fork é preparado e revisado sem credenciais do fork, e escopo, retenção e URLs funcionam para `grupo/subgrupo/projeto`
 
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 03-01-PLAN.md — GitLab read layer (glab api runner, projects, MRs, live state) + forge dispatch wrappers
+- [ ] 03-02-PLAN.md — frontend: nested repoOwner, GitLab copy in Repository access
+
+**Wave 2** *(blocked on 03-01)*
+
+- [ ] 03-03-PLAN.md — git auth to GitLab, fail-closed gh guard, preparation skips, Scope 2+ segments
+
+**Wave 3** *(blocked on 03-03)*
+
+- [ ] 03-04-PLAN.md — server wiring: polling on, refresh via list_all, decoded namespace routes, auth status, release note
 **UI hint**: yes
 
 ### Phase 4: Escrita GitLab: publicação dos resultados
@@ -112,6 +126,6 @@ Plans:
 |------|-------------------|--------|--------------|
 | 1. Camada de provider (Forge) | 1/1 | Complete   | 2026-11-05 |
 | 2. Conexão com o GitLab | 5/5 | Complete   | 2026-11-05 |
-| 3. Leitura GitLab | 0/? | Não iniciada | - |
+| 3. Leitura GitLab | 0/4 | Planejada | - |
 | 4. Escrita GitLab | 0/? | Não iniciada | - |
 | 5. Indexação, UI e docs | 0/? | Não iniciada | - |
