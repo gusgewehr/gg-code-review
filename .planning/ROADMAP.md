@@ -7,7 +7,7 @@ Cinco fases, na ordem de risco: primeiro a camada de provider sem mudar o compor
 ## Fases
 
 - [x] **Phase 1: Camada de provider (Forge) sem mudança de comportamento** - Refatora o acesso ao GitHub atrás de uma interface, sem alterar nada no fluxo atual (completed 2026-11-05)
-- [ ] **Phase 2: Conexão com o GitLab self-hosted** - Seleção de provider por deploy, `glab` fixo na imagem do server, CA interna e login por PAT na UI
+- [x] **Phase 2: Conexão com o GitLab self-hosted** - Seleção de provider por deploy, `glab` fixo na imagem do server, CA interna e login por PAT na UI (completed 2026-11-05)
 - [ ] **Phase 3: Leitura GitLab: descoberta e preparação de MRs** - Lista projetos, descobre MRs por polling e prepara a revisão com refs vivos
 - [ ] **Phase 4: Escrita GitLab: publicação dos resultados** - Findings inline, nota de status, resumo, idempotência e segurança do texto
 - [ ] **Phase 5: Indexação, skills, UI e documentação** - Paridade final: indexação, skills, termos do GitLab na UI, docs e release note
@@ -56,7 +56,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 02-04-PLAN.md — glab login/status/logout with token on stdin, error classification, redaction, HTTP routes
+- [x] 02-04-PLAN.md — glab login/status/logout with token on stdin, error classification, redaction, HTTP routes
 
 **UI hint**: yes
 
@@ -111,7 +111,7 @@ Plans:
 | Fase | Planos concluídos | Status | Concluída em |
 |------|-------------------|--------|--------------|
 | 1. Camada de provider (Forge) | 1/1 | Complete   | 2026-11-05 |
-| 2. Conexão com o GitLab | 3/4 | In Progress|  |
+| 2. Conexão com o GitLab | 4/4 | Complete   | 2026-11-05 |
 | 3. Leitura GitLab | 0/? | Não iniciada | - |
 | 4. Escrita GitLab | 0/? | Não iniciada | - |
 | 5. Indexação, UI e docs | 0/? | Não iniciada | - |
