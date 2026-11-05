@@ -101,10 +101,7 @@ fn activation_exact_parser_rejects_edits_history_bots_and_other_routes() {
     assert_eq!(c.command_number("acme/repo", 0), None);
     assert_eq!(comment(1).command_number("other/repo", 0), None);
     assert_eq!(
-        comment(1).command_number(
-            "acme/repo",
-            forge::iso8601_to_epoch_ms("2099-01-01T00:00:00Z").unwrap()
-        ),
+        comment(1).command_number("acme/repo", forge::iso8601_to_epoch_ms("2099-01-01T00:00:00Z").unwrap()),
         None
     );
 }
