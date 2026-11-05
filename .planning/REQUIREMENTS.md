@@ -23,15 +23,15 @@ Escopo da v1: dar acesso ao GitLab com paridade exata ao fluxo GitHub atual. Nad
 
 ### Repositórios e descoberta (REPO)
 
-- [ ] **REPO-01**: Admin vê grupos, subgrupos e projetos do GitLab em Repository access e escolhe quais revisar
-- [ ] **REPO-02**: MRs abertos dos projetos selecionados são descobertos por polling e aparecem na lista de revisões
-- [ ] **REPO-03**: Um novo push no MR enfileira nova revisão e substitui a anterior
-- [ ] **REPO-04**: MRs em draft seguem a opção `skip_draft_prs` por repositório, como no GitHub
-- [ ] **REPO-05**: MRs fechados ou mergeados saem da fila
+- [x] **REPO-01**: Admin vê grupos, subgrupos e projetos do GitLab em Repository access e escolhe quais revisar
+- [x] **REPO-02**: MRs abertos dos projetos selecionados são descobertos por polling e aparecem na lista de revisões
+- [x] **REPO-03**: Um novo push no MR enfileira nova revisão e substitui a anterior
+- [x] **REPO-04**: MRs em draft seguem a opção `skip_draft_prs` por repositório, como no GitHub
+- [x] **REPO-05**: MRs fechados ou mergeados saem da fila
 
 ### Preparação da revisão (REV)
 
-- [ ] **REV-01**: A revisão de um MR usa base, head e merge-base vivos via fetch de `refs/merge-requests/<iid>/head`, sem checkout; fetch falho falha a preparação
+- [x] **REV-01**: A revisão de um MR usa base, head e merge-base vivos via fetch de `refs/merge-requests/<iid>/head`, sem checkout; fetch falho falha a preparação
 - [ ] **REV-02**: MRs vindos de fork são revisados sem credenciais do fork
 - [ ] **REV-03**: O diff é calculado localmente, então MRs grandes não são truncados pelos limites da API
 
