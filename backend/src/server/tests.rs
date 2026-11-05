@@ -1480,3 +1480,39 @@ fn a_review_with_only_suggestions_auto_posts_without_a_person() {
         .try_begin_review_post(run_id, pr_id, "head", "COMMENT", "comment", "auto", Some(revision))
         .unwrap());
 }
+
+#[test]
+fn gitlab_routes_are_guarded_and_never_echo_the_token() {
+    let req = |origin: Option<&str>, body: &str| Request {
+        method: "POST".into(),
+        path: "/auth/gitlab/token".into(),
+        query: String::new(),
+        origin: origin.map(str::to_string),
+        authorization: None,
+        content_type: Some("application/json".into()),
+        flow_secret: None,
+        body: body.as_bytes().to_vec(),
+    };
+    assert!(!is_public_route("POST", "/auth/gitlab/token"));
+    assert!(!is_public_route("POST", "/auth/gitlab/logout"));
+    assert!(!is_public_route("GET", "/forge/status"));
+    let status = forge_status().unwrap();
+    assert_eq!(status["provider"], "github");
+    assert_eq!(status["loggedIn"], false);
+    assert!(status["error"].is_null());
+    let origin = Some("http://localhost:1421");
+    let tok = "glpat-TESTTOKEN0000000000";
+    for body in [format!("\"{tok}\""), format!("{{\"token\":\"{tok}\"}}")] {
+        let err = gitlab_auth_token(&req(origin, &body)).unwrap_err();
+        assert!(!err.contains("glpat-"));
+    }
+    assert!(gitlab_auth_token(&req(origin, &format!("{{\"token\":\"{tok}\"}}")))
+        .unwrap_err()
+        .contains("OCR_FORGE=gitlab"));
+    assert!(gitlab_auth_token(&req(None, "{}"))
+        .unwrap_err()
+        .starts_with("forbidden"));
+    assert!(gitlab_auth_logout(&req(None, "{}"))
+        .unwrap_err()
+        .starts_with("forbidden"));
+}

@@ -21,6 +21,9 @@ pub(crate) fn route(request: Request, state: SharedState) -> Response {
         ("GET", "/auth/claude/status") => claude_auth_status(&state),
         ("POST", "/auth/claude/logout") => claude_auth_logout(&request, &state),
         ("POST", "/auth/github/logout") => github_auth_logout(&request),
+        ("GET", "/forge/status") => forge_status(),
+        ("POST", "/auth/gitlab/token") => gitlab_auth_token(&request),
+        ("POST", "/auth/gitlab/logout") => gitlab_auth_logout(&request),
         ("POST", "/auth/claude/start") => start_claude_auth(&request, &state),
         ("GET", "/auth/claude/events") => claude_auth_events(&request),
         ("POST", "/auth/claude/input") => claude_auth_input(&request),
@@ -172,6 +175,36 @@ pub(crate) fn github_auth_logout(request: &Request) -> Result<serde_json::Value,
     require_trusted_origin(request)?;
     forge::sign_out()?;
     let _ = crate::accounts::sandbox_sync::sync_app_auth();
+    Ok(serde_json::json!({ "ok": true }))
+}
+
+const NOT_GITLAB: &str = "GitLab is not configured on this deploy (set OCR_FORGE=gitlab and OCR_GITLAB_HOST).";
+
+pub(crate) fn forge_status() -> Result<serde_json::Value, String> {
+    let status = if forge::current() == forge::Forge::GitLab {
+        crate::gitlab::status(&forge::host())
+    } else {
+        crate::gitlab::ForgeStatus::github(forge::host())
+    };
+    serde_json::to_value(status).map_err(|error| error.to_string())
+}
+
+pub(crate) fn gitlab_auth_token(request: &Request) -> Result<serde_json::Value, String> {
+    require_trusted_origin(request)?;
+    let token = crate::gitlab::parse_token_body(&request.body)?;
+    if forge::current() != forge::Forge::GitLab {
+        return Err(NOT_GITLAB.into());
+    }
+    let status = crate::gitlab::login(&forge::host(), &token)?;
+    serde_json::to_value(status).map_err(|error| error.to_string())
+}
+
+pub(crate) fn gitlab_auth_logout(request: &Request) -> Result<serde_json::Value, String> {
+    require_trusted_origin(request)?;
+    if forge::current() != forge::Forge::GitLab {
+        return Err(NOT_GITLAB.into());
+    }
+    crate::gitlab::logout(&forge::host())?;
     Ok(serde_json::json!({ "ok": true }))
 }
 
