@@ -32,8 +32,8 @@ Escopo da v1: dar acesso ao GitLab com paridade exata ao fluxo GitHub atual. Nad
 ### Preparação da revisão (REV)
 
 - [x] **REV-01**: A revisão de um MR usa base, head e merge-base vivos via fetch de `refs/merge-requests/<iid>/head`, sem checkout; fetch falho falha a preparação
-- [ ] **REV-02**: MRs vindos de fork são revisados sem credenciais do fork
-- [ ] **REV-03**: O diff é calculado localmente, então MRs grandes não são truncados pelos limites da API
+- [x] **REV-02**: MRs vindos de fork são revisados sem credenciais do fork
+- [x] **REV-03**: O diff é calculado localmente, então MRs grandes não são truncados pelos limites da API
 
 ### Publicação (PUB)
 

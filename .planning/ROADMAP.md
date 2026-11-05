@@ -83,7 +83,7 @@ Plans:
 
 **Wave 2** *(blocked on 03-01)*
 
-- [ ] 03-03-PLAN.md — git auth to GitLab, fail-closed gh guard, preparation skips, Scope 2+ segments
+- [x] 03-03-PLAN.md — git auth to GitLab, fail-closed gh guard, preparation skips, Scope 2+ segments
 
 **Wave 3** *(blocked on 03-03)*
 
@@ -126,6 +126,6 @@ Plans:
 |------|-------------------|--------|--------------|
 | 1. Camada de provider (Forge) | 1/1 | Complete   | 2026-11-05 |
 | 2. Conexão com o GitLab | 5/5 | Complete   | 2026-11-05 |
-| 3. Leitura GitLab | 2/4 | In Progress|  |
+| 3. Leitura GitLab | 3/4 | In Progress|  |
 | 4. Escrita GitLab | 0/? | Não iniciada | - |
 | 5. Indexação, UI e docs | 0/? | Não iniciada | - |
