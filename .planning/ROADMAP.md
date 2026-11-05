@@ -103,7 +103,14 @@ Plans:
   4. Republicar ou repetir após falha parcial não cria comentários duplicados
   5. Se o MR recebeu push depois da revisão, a publicação é abortada; texto do modelo com `/merge`, `/approve`, menções ou auto-links não dispara nenhuma ação no GitLab
 
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+
+- [ ] 04-01-PLAN.md — GitLab write primitives: body sanitizer, `glab api --input` JSON writer, MR diff line map/position builder
+- [ ] 04-02-PLAN.md — status-comment in-place edit hook; GitLab never approves/requests changes; GitLab commit link
+- [ ] 04-03-PLAN.md — GitLab publisher: notes layer, status notes, post_review (discussions, fallback, summary, idempotency, head abort)
+- [ ] 04-04-PLAN.md — forge wiring, lift Phase-3 gates, release note, HUMAN-UAT, full gate
 
 ### Phase 5: Indexação, skills, UI e documentação
 
