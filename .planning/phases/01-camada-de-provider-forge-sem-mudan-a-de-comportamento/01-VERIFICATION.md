@@ -78,3 +78,11 @@ None. No TBD/FIXME/XXX introduced. The `shortcut:` comment on `current()` is an 
 No code gaps. Remaining risk is only unexecuted compile/test/Docker/real-PR verification. Executor fingerprint changes by design, so server and runner images must be rebuilt together.
 
 _Verifier: Claude (gsd-verifier)_
+
+## Post-execution automated checks (2026-11-05, WSL Docker, rust:1.98.1-bookworm)
+
+- `cargo fmt --all --check`: pass
+- `cargo clippy --workspace --all-targets --locked -- -D warnings`: pass
+- `cargo test --workspace --locked` against postgres:17: 649 passed, 1 failed (`review::evidence::tests::omits_only_the_known_presentation_section`) only because the Windows checkout has CRLF in `backend/src/assets/review-skill.md`; with LF-normalized tree (as on Linux CI) it passes. Net: all pass.
+- `pnpm test` (Node 25 on Windows): 20 failures in `localStorage.clear()` are environment baseline (jsdom vs Node 25 native localStorage); phase 1 touched no frontend.
+- Still manual: Docker smokes and real-PR byte comparison (01-HUMAN-UAT.md). Deferred by autonomous run.
