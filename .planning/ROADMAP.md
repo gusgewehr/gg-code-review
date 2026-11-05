@@ -6,15 +6,15 @@ Cinco fases, na ordem de risco: primeiro a camada de provider sem mudar o compor
 
 ## Fases
 
-- [ ] **Fase 1: Camada de provider (Forge) sem mudança de comportamento** - Refatora o acesso ao GitHub atrás de uma interface, sem alterar nada no fluxo atual
-- [ ] **Fase 2: Conexão com o GitLab self-hosted** - Seleção de provider por deploy, `glab` fixo na imagem do server, CA interna e login por PAT na UI
-- [ ] **Fase 3: Leitura GitLab: descoberta e preparação de MRs** - Lista projetos, descobre MRs por polling e prepara a revisão com refs vivos
-- [ ] **Fase 4: Escrita GitLab: publicação dos resultados** - Findings inline, nota de status, resumo, idempotência e segurança do texto
-- [ ] **Fase 5: Indexação, skills, UI e documentação** - Paridade final: indexação, skills, termos do GitLab na UI, docs e release note
+- [ ] **Phase 1: Camada de provider (Forge) sem mudança de comportamento** - Refatora o acesso ao GitHub atrás de uma interface, sem alterar nada no fluxo atual
+- [ ] **Phase 2: Conexão com o GitLab self-hosted** - Seleção de provider por deploy, `glab` fixo na imagem do server, CA interna e login por PAT na UI
+- [ ] **Phase 3: Leitura GitLab: descoberta e preparação de MRs** - Lista projetos, descobre MRs por polling e prepara a revisão com refs vivos
+- [ ] **Phase 4: Escrita GitLab: publicação dos resultados** - Findings inline, nota de status, resumo, idempotência e segurança do texto
+- [ ] **Phase 5: Indexação, skills, UI e documentação** - Paridade final: indexação, skills, termos do GitLab na UI, docs e release note
 
 ## Detalhes das fases
 
-### Fase 1: Camada de provider (Forge) sem mudança de comportamento
+### Phase 1: Camada de provider (Forge) sem mudança de comportamento
 **Goal**: O código fora de `backend/src/github/` passa a falar com uma interface de provider, e o fluxo GitHub continua exatamente igual
 **Depends on**: Nada (primeira fase)
 **Requirements**: FORGE-02
@@ -25,7 +25,7 @@ Cinco fases, na ordem de risco: primeiro a camada de provider sem mudar o compor
   4. Nenhum arquivo fora de `backend/src/github/` e da camada de provider chama `github::` diretamente
 **Plans**: TBD
 
-### Fase 2: Conexão com o GitLab self-hosted
+### Phase 2: Conexão com o GitLab self-hosted
 **Goal**: O admin escolhe GitLab como provider do deploy e conecta à instância interna (CA própria) colando um PAT, sem expor o token
 **Depends on**: Fase 1
 **Requirements**: FORGE-01, AUTH-01, AUTH-02, AUTH-03, AUTH-04, AUTH-05
@@ -38,7 +38,7 @@ Cinco fases, na ordem de risco: primeiro a camada de provider sem mudar o compor
 **Plans**: TBD
 **UI hint**: yes
 
-### Fase 3: Leitura GitLab: descoberta e preparação de MRs
+### Phase 3: Leitura GitLab: descoberta e preparação de MRs
 **Goal**: MRs abertos dos projetos GitLab escolhidos aparecem na lista de revisões e têm a revisão preparada com evidência congelada correta
 **Depends on**: Fase 2
 **Requirements**: FORGE-03, REPO-01, REPO-02, REPO-03, REPO-04, REPO-05, REV-01, REV-02, REV-03
@@ -51,7 +51,7 @@ Cinco fases, na ordem de risco: primeiro a camada de provider sem mudar o compor
 **Plans**: TBD
 **UI hint**: yes
 
-### Fase 4: Escrita GitLab: publicação dos resultados
+### Phase 4: Escrita GitLab: publicação dos resultados
 **Goal**: Uma revisão validada aparece no MR como discussões inline, nota de status e resumo, sem duplicar nem postar em posições velhas
 **Depends on**: Fase 3
 **Requirements**: PUB-01, PUB-02, PUB-03, PUB-04, PUB-05, PUB-06, PUB-07
@@ -63,7 +63,7 @@ Cinco fases, na ordem de risco: primeiro a camada de provider sem mudar o compor
   5. Se o MR recebeu push depois da revisão, a publicação é abortada; texto do modelo com `/merge`, `/approve`, menções ou auto-links não dispara nenhuma ação no GitLab
 **Plans**: TBD
 
-### Fase 5: Indexação, skills, UI e documentação
+### Phase 5: Indexação, skills, UI e documentação
 **Goal**: O deploy GitLab fica com paridade completa: indexação, skills, vocabulário e links do GitLab na UI, e documentação de configuração
 **Depends on**: Fase 4
 **Requirements**: IDX-01, IDX-02, UI-01, UI-02
