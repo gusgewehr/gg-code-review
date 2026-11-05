@@ -50,9 +50,9 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 02-01-PLAN.md — forge selection from env + pin guard in settings, Forge::GitLab gating, internal CA bundle at boot
-- [ ] 02-02-PLAN.md — glab pinned in server image, compose env + CA mount (server only), isolation static check, changelog, spike kit
-- [ ] 02-03-PLAN.md — Settings GitLab connection panel + /forge/status branching (frontend)
+- [x] 02-01-PLAN.md — forge selection from env + pin guard in settings, Forge::GitLab gating, internal CA bundle at boot
+- [x] 02-02-PLAN.md — glab pinned in server image, compose env + CA mount (server only), isolation static check, changelog, spike kit
+- [x] 02-03-PLAN.md — Settings GitLab connection panel + /forge/status branching (frontend)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -111,7 +111,7 @@ Plans:
 | Fase | Planos concluídos | Status | Concluída em |
 |------|-------------------|--------|--------------|
 | 1. Camada de provider (Forge) | 1/1 | Complete   | 2026-11-05 |
-| 2. Conexão com o GitLab | 0/? | Não iniciada | - |
+| 2. Conexão com o GitLab | 3/4 | In Progress|  |
 | 3. Leitura GitLab | 0/? | Não iniciada | - |
 | 4. Escrita GitLab | 0/? | Não iniciada | - |
 | 5. Indexação, UI e docs | 0/? | Não iniciada | - |

@@ -9,7 +9,7 @@ Escopo da v1: dar acesso ao GitLab com paridade exata ao fluxo GitHub atual. Nad
 
 ### Fundação (FORGE)
 
-- [ ] **FORGE-01**: Admin escolhe o provider do deploy (GitHub ou GitLab) por configuração; o server se recusa a iniciar se o provider ou o host mudar sobre dados existentes
+- [x] **FORGE-01**: Admin escolhe o provider do deploy (GitHub ou GitLab) por configuração; o server se recusa a iniciar se o provider ou o host mudar sobre dados existentes
 - [x] **FORGE-02**: Fluxo GitHub continua idêntico após a camada de provider (testes, smokes, corpos de comentário e URLs)
 - [ ] **FORGE-03**: Projetos em namespaces aninhados (grupo/subgrupo/projeto) funcionam em todo o produto (escopo, retenção, URLs)
 
@@ -18,7 +18,7 @@ Escopo da v1: dar acesso ao GitLab com paridade exata ao fluxo GitHub atual. Nad
 - [ ] **AUTH-01**: Admin conecta o GitLab colando um PAT em Settings; o token vai ao `glab` via stdin e nunca aparece no browser, logs ou banco
 - [ ] **AUTH-02**: Settings mostra o status da conexão GitLab (host, usuário) e um erro acionável quando o token não tem escopo `api`, está expirado ou o host não responde
 - [ ] **AUTH-03**: Admin pode desconectar o GitLab
-- [ ] **AUTH-04**: O server confia na CA interna montada no container para `glab` e `git`, sem opção de desligar a verificação TLS
+- [x] **AUTH-04**: O server confia na CA interna montada no container para `glab` e `git`, sem opção de desligar a verificação TLS
 - [ ] **AUTH-05**: `glab` é instalado só na imagem do server, com versão fixa e checksum verificado; runners não recebem `glab`, token nem CA
 
 ### Repositórios e descoberta (REPO)
