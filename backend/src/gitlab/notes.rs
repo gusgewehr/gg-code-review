@@ -82,8 +82,6 @@ pub(super) struct GlNote {
     #[serde(default)]
     pub system: bool,
     pub author: GlAuthor,
-    #[serde(rename = "type")]
-    pub kind: Option<String>,
     pub position: Option<GlPosition>,
 }
 

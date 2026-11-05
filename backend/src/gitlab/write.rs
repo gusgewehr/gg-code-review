@@ -1,7 +1,7 @@
 //! JSON writes through `glab api --input <file>`: the body lives in a 0600 temp file, never in argv.
 
 use super::api::TOKEN_MESSAGE;
-use super::auth::{classify, config_dir, glab_read, redact, run_glab_cancellable, text_of};
+use super::auth::{classify, glab_read, redact, run_glab_cancellable, text_of};
 use serde_json::Value;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -101,25 +101,6 @@ pub(super) fn api_write_at(
         eprintln!("gitlab write: {} for {what}", class.code);
         return Err(WriteError::Other(generic));
     }
-}
-
-pub(super) fn write_json(
-    method: &str,
-    endpoint: &str,
-    body: Option<&Value>,
-    what: &str,
-) -> Result<Vec<u8>, WriteError> {
-    api_write_at(
-        Path::new("glab"),
-        &crate::forge::host(),
-        &config_dir(),
-        method,
-        endpoint,
-        body,
-        what,
-        1000,
-        &AtomicBool::new(false),
-    )
 }
 
 #[cfg(all(test, unix))]

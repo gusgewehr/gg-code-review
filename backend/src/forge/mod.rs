@@ -164,6 +164,124 @@ pub(crate) fn apply_git_https_auth(command: &mut std::process::Command) {
     }
 }
 
+pub(crate) fn post_review(
+    full_name: &str,
+    number: i64,
+    prepared: crate::github::PreparedReview,
+) -> Result<Option<i64>, String> {
+    match current() {
+        Forge::GitHub => crate::github::post_review(full_name, number, prepared),
+        Forge::GitLab => crate::gitlab::post_review(full_name, number, prepared),
+    }
+}
+
+pub(crate) fn find_review_id_by_marker(full_name: &str, number: i64, marker: &str) -> Result<Option<i64>, String> {
+    match current() {
+        Forge::GitHub => crate::github::find_review_id_by_marker(full_name, number, marker),
+        Forge::GitLab => crate::gitlab::find_review_id_by_marker(full_name, number, marker),
+    }
+}
+
+pub(crate) fn diff_anchors(
+    full_name: &str,
+    number: i64,
+) -> std::collections::HashMap<String, (std::collections::HashSet<i64>, std::collections::HashSet<i64>)> {
+    match current() {
+        Forge::GitHub => crate::github::diff_anchors(full_name, number),
+        Forge::GitLab => crate::gitlab::diff_anchors(full_name, number),
+    }
+}
+
+pub(crate) fn dedupe_review_comments(
+    full_name: &str,
+    number: i64,
+    comments: serde_json::Value,
+) -> crate::github::DedupeResult {
+    match current() {
+        Forge::GitHub => crate::github::dedupe_review_comments(full_name, number, comments),
+        Forge::GitLab => crate::gitlab::dedupe_review_comments(full_name, number, comments),
+    }
+}
+
+pub(crate) fn snapshot_review_requests(
+    full_name: &str,
+    number: i64,
+) -> Result<crate::github::ReviewRequestSnapshot, String> {
+    match current() {
+        Forge::GitHub => crate::github::snapshot_review_requests(full_name, number),
+        Forge::GitLab => Ok(crate::github::ReviewRequestSnapshot {
+            login: String::new(),
+            requested: Default::default(),
+            events: Default::default(),
+        }),
+    }
+}
+
+pub(crate) fn restore_review_requests(
+    full_name: &str,
+    number: i64,
+    review_id: i64,
+    snapshot: &crate::github::ReviewRequestSnapshot,
+) -> Result<bool, String> {
+    match current() {
+        Forge::GitHub => crate::github::restore_review_requests(full_name, number, review_id, snapshot),
+        // GitLab notes never consume review requests, so there is nothing to restore.
+        Forge::GitLab => Ok(true),
+    }
+}
+
+pub(crate) fn upsert_issue_comment_by_marker(
+    full_name: &str,
+    number: i64,
+    marker: &str,
+    body: &str,
+) -> Result<crate::github::IssueCommentUpsert, String> {
+    match current() {
+        Forge::GitHub => crate::github::upsert_issue_comment_by_marker(full_name, number, marker, body),
+        Forge::GitLab => crate::gitlab::upsert_issue_comment_by_marker(full_name, number, marker, body),
+    }
+}
+
+/// Name kept so call sites stay unchanged; dispatches to the active forge.
+pub(crate) struct GitHubStatusComments;
+
+impl crate::github::StatusCommentApi for GitHubStatusComments {
+    fn publisher_id(&mut self) -> Result<i64, String> {
+        match current() {
+            Forge::GitHub => crate::github::GitHubStatusComments.publisher_id(),
+            Forge::GitLab => crate::gitlab::GitLabStatusComments::live().publisher_id(),
+        }
+    }
+
+    fn list(&mut self, repo: &str, number: i64) -> Result<Vec<crate::github::StatusComment>, String> {
+        match current() {
+            Forge::GitHub => crate::github::GitHubStatusComments.list(repo, number),
+            Forge::GitLab => crate::gitlab::GitLabStatusComments::live().list(repo, number),
+        }
+    }
+
+    fn post(&mut self, repo: &str, number: i64, body: &str) -> Result<i64, String> {
+        match current() {
+            Forge::GitHub => crate::github::GitHubStatusComments.post(repo, number, body),
+            Forge::GitLab => crate::gitlab::GitLabStatusComments::live().post(repo, number, body),
+        }
+    }
+
+    fn edit(&mut self, repo: &str, number: i64, id: i64, body: &str) -> Result<bool, String> {
+        match current() {
+            Forge::GitHub => crate::github::GitHubStatusComments.edit(repo, number, id, body),
+            Forge::GitLab => crate::gitlab::GitLabStatusComments::live().edit(repo, number, id, body),
+        }
+    }
+
+    fn delete(&mut self, repo: &str, number: i64, id: i64) -> Result<(), String> {
+        match current() {
+            Forge::GitHub => crate::github::GitHubStatusComments.delete(repo, number, id),
+            Forge::GitLab => crate::gitlab::GitLabStatusComments::live().delete(repo, number, id),
+        }
+    }
+}
+
 pub(crate) fn require_github(what: &str) -> Result<(), String> {
     if current() == Forge::GitLab {
         return Err(format!("{what} is not supported yet on GitLab."));
