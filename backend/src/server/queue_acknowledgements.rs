@@ -159,10 +159,6 @@ static QUEUE_ACKNOWLEDGEMENT_TASK: CoalescedTask = CoalescedTask::new();
 /// or review-job paths hand it to a background pass with its own connection;
 /// requests coalesce per database instead of starting a thread per call.
 pub(crate) fn spawn_queue_acknowledgements(db_handle: Db) {
-    // queue acknowledgement comments are GitHub-only until Phase 4
-    if crate::forge::current() == crate::forge::Forge::GitLab {
-        return;
-    }
     QUEUE_ACKNOWLEDGEMENT_TASK.spawn(db_handle.id(), move || {
         // GitHub comments: one instance reconciles at a time. Waiting rather than skipping: a pass
         // already running elsewhere may have read the rows before this request's change.
