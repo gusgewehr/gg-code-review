@@ -78,8 +78,13 @@ pub(crate) fn route_dynamic(request: &Request, state: &SharedState) -> Result<se
         .filter(|part| !part.is_empty())
         .collect();
     match (request.method.as_str(), parts.as_slice()) {
-        ("GET", ["workspaces", login, "repos"]) => list_workspace_repos(state, &percent_decode(login)),
-        ("POST", ["workspaces", login, "repos", "refresh"]) => refresh_workspace_repos(state, &percent_decode(login)),
+        // nginx decodes `%2F`, so nested GitLab groups arrive as several segments.
+        ("POST", ["workspaces", login @ .., "repos", "refresh"]) if !login.is_empty() => {
+            refresh_workspace_repos(state, &percent_decode(&login.join("/")))
+        }
+        ("GET", ["workspaces", login @ .., "repos"]) if !login.is_empty() => {
+            list_workspace_repos(state, &percent_decode(&login.join("/")))
+        }
         ("POST", ["repos", repo_id, "subscribe"]) => subscribe_repo(request, state, parse_id(repo_id)?),
         ("POST", ["repos", repo_id, "index"]) => start_index(state, parse_id(repo_id)?),
         ("GET", ["repos", repo_id, "index"]) => with_db_read(state, |db| db.repo_index_status(parse_id(repo_id)?)),

@@ -1559,4 +1559,11 @@ fn nested_workspace_login_is_percent_decoded_in_routes() {
     };
     let repos = route_dynamic(&request, &state).unwrap();
     assert_eq!(repos[0]["fullName"], "g/sub/proj");
+    // Behind nginx the `%2F` arrives already decoded.
+    let decoded = Request {
+        path: "/workspaces/g/sub/repos".into(),
+        ..request
+    };
+    let repos = route_dynamic(&decoded, &state).unwrap();
+    assert_eq!(repos[0]["fullName"], "g/sub/proj");
 }
