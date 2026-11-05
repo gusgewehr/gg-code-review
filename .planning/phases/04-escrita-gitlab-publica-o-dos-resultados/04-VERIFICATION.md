@@ -62,3 +62,24 @@ None found (no TBD/FIXME markers checked via targeted review of listed files; no
 ## Not checked
 
 Full suite not rerun (executor reported 730 passed); no exhaustive debt-marker grep; real GitLab behavior unverified.
+
+## Code review and final gate (2026-11-05)
+
+Code review: two passes (`04-REVIEW.iter2.md` first pass, `04-REVIEW.md` second pass; fixes in `04-REVIEW-FIX.md`).
+- Pass 1: 2 critical, 4 warning, 5 info. CR-01 (sanitizer bypasses), CR-02 (summary lost after partial publication), WR-01..WR-04 fixed in 2cc0f72..6039326.
+- Pass 2: 0 critical, 3 warning (all sanitizer), 8 info. The 3 warnings were fixed in dd98e7c: suggestion fences in blockquote/list containers, link-ending chars GitLab keeps inside URLs, `project@sha` references. Documented shortcut: a full same-instance issue/MR URL is left intact and may still cross-reference.
+- Info items left open (see 04-REVIEW.md), including: Skip/Mark reviewed after a partial GitLab publication still records nothing published; inline discussions stay without a summary if the head changes mid-loop.
+
+Gate on HEAD dd98e7c:
+
+| Check | Result |
+|---|---|
+| `cargo fmt --all --check` + `cargo clippy --workspace --all-targets --locked -D warnings` | pass |
+| `rusttest --lib gitlab` / `publication` / `forge` / `status_comments` | 74 / 47 (1 ignored) / 8 / 18 passed, 0 failed |
+| full `rusttest` (postgres:17) | 734 passed, 0 failed, 15 ignored (baseline after phase 3: 684) |
+| `pnpm test` | 278 passed, 20 failed (baseline: the known 20 localStorage.clear() failures under Node 25), 7 skipped |
+| `tsc --noEmit -p .` | pass |
+| `biome lint src` | pass (121 files) |
+| `check-file-sizes.mjs` | pass (310 files) |
+
+Still unverified: real GitLab instance behavior (rendering of sanitized notes, glab 1.128.0 error format for WR-03 classification, discussion positions); see 04-HUMAN-UAT.md.
