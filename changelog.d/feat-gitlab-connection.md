@@ -14,7 +14,7 @@
   added, removed or context line (a finding GitLab cannot place becomes a general note with its file
   and line), the review summary as a note (with suggestions when Post suggestions is on), and the
   status note edited in place. Republishing never duplicates comments, a push after the review aborts
-  publication, and model text cannot trigger quick actions, mentions or references. OpenCodeReview
+  publication, and model text cannot trigger quick actions, mentions, short references or applicable suggestions. OpenCodeReview
   never approves, requests changes on or merges a merge request; on GitLab the Request changes
   auto-post mode publishes comments.
 

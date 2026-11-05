@@ -1,15 +1,17 @@
 //! Neutralises model text before it becomes a GitLab note: no quick actions, no mentions or cross references,
-//! no applicable suggestions, and a hard size cap. Only a line that is exactly one HTML comment (the OCR
+//! no applicable suggestions, and a hard size cap. shortcut: a full http(s) URL to an issue/MR on the same
+//! instance is left intact (rewriting it would break the link) and GitLab may still cross-reference it.
+//! Only a line that is exactly one HTML comment (the OCR
 //! markers) is left untouched. Code spans and fences are neutralised too: the sanitizer cannot know for sure
 //! what GitLab renders as code (unbalanced backticks, HTML blocks, list containers), so it never guesses.
 
 pub(super) const ZWSP: char = '\u{200B}';
 pub(super) const MAX_BODY_CHARS: usize = 1_000_000;
 const NOTICE: &str = "\n\n_Truncated by OpenCodeReview: the original text exceeded GitLab's note size limit._\n\n";
-/// Characters that can end an http(s) link in GitLab's Markdown (link syntax, emphasis, code, tables, escapes).
-const URL_END: &[char] = &[
-    '(', ')', '[', ']', '{', '}', '<', '>', '"', '\'', '`', ',', '\\', '|', '*', '_', '~', '$', '^', '!',
-];
+/// Characters that always end an http(s) link in GitLab's Markdown (link syntax, code, tables, escapes, math).
+const URL_END: &[char] = &['(', ')', '[', ']', '{', '}', '<', '>', '"', '`', '\\', '|', '$'];
+/// Emphasis/strikethrough delimiters: they end a link only when an opener was seen earlier in the body.
+const EMPHASIS: &[char] = &['*', '~'];
 
 /// Removes every zero-width space so stored bodies can be matched against markers, fingerprints and titles.
 pub(super) fn strip_zwsp(body: &str) -> String {
@@ -26,22 +28,19 @@ fn is_marker(line: &str) -> bool {
     !inner.contains("--") && !inner.starts_with('>') && !inner.starts_with("->")
 }
 
-/// (indent, fence char, run length, info string) of a fence line, if it is one.
-fn fence_of(line: &str) -> Option<(usize, char, usize, &str)> {
-    let rest = line.trim_start_matches(' ');
-    let indent = line.len() - rest.len();
-    let ch = rest.chars().next().filter(|c| matches!(c, '`' | '~'))?;
-    let run = rest.chars().take_while(|c| *c == ch).count();
-    let info = &rest[run..];
-    if indent > 3 || run < 3 || (ch == '`' && info.contains('`')) {
-        return None;
-    }
-    Some((indent, ch, run, info))
+/// Whether `token[at]` ends a link: a hard end, a `_` that could close emphasis (not intraword), or an
+/// emphasis delimiter with an opener earlier in the body (`opened`) or the token.
+fn ends_url(token: &str, at: usize, c: char, opened: &[char]) -> bool {
+    let next = token[at + c.len_utf8()..].chars().next();
+    URL_END.contains(&c)
+        || (c == '_' && !next.is_some_and(|n| n.is_ascii_alphanumeric()))
+        || (EMPHASIS.contains(&c) && (opened.contains(&c) || token[..at].contains(c)))
 }
 
 /// Byte ranges of the http(s) links GitLab autolinks in a whitespace-free token, each ending before the
-/// first [`URL_END`] character. A scheme glued to other text is not a link, so it gets no exemption.
-fn url_spans(token: &str) -> Vec<(usize, usize)> {
+/// first character that ends it ([`ends_url`]). A scheme glued to other text is not a link, so it gets no
+/// exemption.
+fn url_spans(token: &str, opened: &[char]) -> Vec<(usize, usize)> {
     let lower = token.to_ascii_lowercase();
     let mut spans = Vec::new();
     let mut from = 0;
@@ -51,7 +50,10 @@ fn url_spans(token: &str) -> Vec<(usize, usize)> {
         .min()
     {
         let body = start + scheme;
-        let end = token[body..].find(URL_END).map_or(token.len(), |i| body + i);
+        let end = token[body..]
+            .char_indices()
+            .find(|(i, c)| ends_url(token, body + i, *c, opened))
+            .map_or(token.len(), |(i, _)| body + i);
         let glued = token[..start]
             .chars()
             .next_back()
@@ -70,13 +72,19 @@ fn is_live_sigil(chars: &[(usize, char)], i: usize) -> bool {
     let next = chars.get(i + 1).map(|(_, c)| *c);
     let word = next.is_some_and(|n| n.is_ascii_alphanumeric() || n == '_');
     match chars[i].1 {
-        '@' => word && !prev.is_some_and(|p| p.is_ascii_alphanumeric()),
+        // `project@<sha>` / `group/project@<sha>` is a cross-project commit reference.
+        '@' => word && (!prev.is_some_and(|p| p.is_ascii_alphanumeric()) || is_sha_ref(chars, i)),
         '#' | '!' | '$' => next.is_some_and(|n| n.is_ascii_digit()),
         // An HTML entity (`&commat;`, `&#x40;`) would decode into a live sigil.
         '&' => next.is_some_and(|n| n.is_ascii_digit()) || is_entity(chars, i),
         '~' | '%' => word || next == Some('"'),
         _ => false,
     }
+}
+
+fn is_sha_ref(chars: &[(usize, char)], i: usize) -> bool {
+    let hex = chars[i + 1..].iter().take_while(|(_, c)| c.is_ascii_hexdigit()).count();
+    hex >= 7 && !chars.get(i + 1 + hex).is_some_and(|(_, c)| c.is_ascii_alphanumeric())
 }
 
 fn is_entity(chars: &[(usize, char)], i: usize) -> bool {
@@ -87,8 +95,8 @@ fn is_entity(chars: &[(usize, char)], i: usize) -> bool {
     name > 0 && chars.get(i + 1 + name).is_some_and(|(_, c)| *c == ';')
 }
 
-fn neutralize_token(token: &str, out: &mut String) {
-    let spans = url_spans(token);
+fn neutralize_token(token: &str, opened: &mut Vec<char>, out: &mut String) {
+    let spans = url_spans(token, opened);
     let chars: Vec<(usize, char)> = token.char_indices().collect();
     for (i, (at, c)) in chars.iter().enumerate() {
         out.push(*c);
@@ -96,21 +104,22 @@ fn neutralize_token(token: &str, out: &mut String) {
             out.push(ZWSP);
         }
     }
+    opened.extend(EMPHASIS.iter().filter(|c| token.contains(**c)));
 }
 
-fn neutralize_line(line: &str) -> String {
+fn neutralize_line(line: &str, opened: &mut Vec<char>) -> String {
     let mut out = String::with_capacity(line.len() + 4);
     let mut token = String::new();
     for c in line.chars() {
         if c.is_whitespace() {
-            neutralize_token(&token, &mut out);
+            neutralize_token(&token, opened, &mut out);
             token.clear();
             out.push(c);
         } else {
             token.push(c);
         }
     }
-    neutralize_token(&token, &mut out);
+    neutralize_token(&token, opened, &mut out);
     out
 }
 
@@ -124,24 +133,33 @@ fn defuse_slash(line: &str) -> String {
     line.to_string()
 }
 
-/// Any fence opener with a `suggestion` info string becomes `diff`, whatever the fence state.
+/// Any fence run with a `suggestion` info string becomes `diff`, wherever it sits on the line (blockquote and
+/// list containers included) and whatever the fence state.
 fn defuse_suggestion(line: String) -> String {
-    match fence_of(&line) {
-        Some((indent, ch, run, info)) if info.trim_start().starts_with("suggestion") => {
-            format!("{}{}diff", " ".repeat(indent), ch.to_string().repeat(run))
+    let bytes = line.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        let run = bytes[i..].iter().take_while(|b| **b == bytes[i]).count();
+        if matches!(bytes[i], b'`' | b'~') && run >= 3 {
+            let info = line[i + run..].trim_start_matches([' ', '\t']);
+            if info.get(..10).is_some_and(|w| w.eq_ignore_ascii_case("suggestion")) {
+                return format!("{}diff", &line[..i + run]);
+            }
         }
-        _ => line,
+        i += run;
     }
+    line
 }
 
 pub(super) fn finalize_body(body: &str) -> String {
+    let mut opened = Vec::new();
     let lines = body
         .split('\n')
         .map(|line| {
             if is_marker(line) {
                 line.to_string()
             } else {
-                neutralize_line(&defuse_suggestion(defuse_slash(line)))
+                neutralize_line(&defuse_suggestion(defuse_slash(line)), &mut opened)
             }
         })
         .collect();
@@ -233,6 +251,9 @@ mod tests {
             "[x](https://h/a#b)",
             "<https://h/@alice>",
             "https://h/a#12",
+            "https://a/b,@alice",
+            "https://h/acme_web/x%20y/@ui/pkg!1",
+            "https://h/~user/a*b@c",
         ] {
             assert_eq!(finalize_body(s), s);
         }
@@ -253,7 +274,9 @@ mod tests {
             ("a ` @all", "a ` @^all"),
             ("`x`` @all `y`", "`x`` @^all `y`"),
             ("[x](https://h)@all", "[x](https://h)@^all"),
-            ("https://a/b,@alice", "https://a/b,@^alice"),
+            ("*x* https://h*@all", "*x* https://h*@^all"),
+            ("https://h_@all", "https://h_@^all"),
+            ("g/p@abc1234 p@deadbeef0", "g/p@^abc1234 p@^deadbeef0"),
             ("xhttps://h/@all", "xhttps://h/@^all"),
             ("g/p#1", "g/p#^1"),
             ("project!3", "project!^3"),
@@ -278,6 +301,8 @@ mod tests {
         assert_eq!(finalize_body("```suggestion:-0+0\nx\n```"), "```diff\nx\n```");
         assert_eq!(finalize_body("```rust\nx\n```"), "```rust\nx\n```");
         assert_eq!(finalize_body("~~~\n```suggestion\n~~~"), "~~~\n```diff\n~~~");
+        assert_eq!(finalize_body("> ```suggestion\n> x"), "> ```diff\n> x");
+        assert_eq!(finalize_body("- ``` Suggestion:-1+0"), "- ```diff");
     }
 
     #[test]
