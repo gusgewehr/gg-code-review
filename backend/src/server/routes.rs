@@ -78,8 +78,8 @@ pub(crate) fn route_dynamic(request: &Request, state: &SharedState) -> Result<se
         .filter(|part| !part.is_empty())
         .collect();
     match (request.method.as_str(), parts.as_slice()) {
-        ("GET", ["workspaces", login, "repos"]) => list_workspace_repos(state, login),
-        ("POST", ["workspaces", login, "repos", "refresh"]) => refresh_workspace_repos(state, login),
+        ("GET", ["workspaces", login, "repos"]) => list_workspace_repos(state, &percent_decode(login)),
+        ("POST", ["workspaces", login, "repos", "refresh"]) => refresh_workspace_repos(state, &percent_decode(login)),
         ("POST", ["repos", repo_id, "subscribe"]) => subscribe_repo(request, state, parse_id(repo_id)?),
         ("POST", ["repos", repo_id, "index"]) => start_index(state, parse_id(repo_id)?),
         ("GET", ["repos", repo_id, "index"]) => with_db_read(state, |db| db.repo_index_status(parse_id(repo_id)?)),
@@ -168,6 +168,12 @@ pub(crate) fn health(state: &SharedState) -> Result<serde_json::Value, String> {
 
 pub(crate) fn github_auth_status() -> Result<serde_json::Value, String> {
     let _ = crate::accounts::sandbox_sync::sync_app_auth();
+    if forge::current() == forge::Forge::GitLab {
+        let v = serde_json::to_value(crate::gitlab::status(&forge::host())).map_err(|error| error.to_string())?;
+        return Ok(
+            serde_json::json!({"loggedIn": v["loggedIn"], "login": v["login"], "host": v["host"], "detail": "glab authenticated"}),
+        );
+    }
     serde_json::to_value(forge::auth_status()).map_err(|error| error.to_string())
 }
 
@@ -357,7 +363,15 @@ pub(crate) fn get_archive_storage_status(state: &SharedState) -> Result<serde_js
 }
 
 pub(crate) fn refresh_github_workspaces(state: &SharedState) -> Result<serde_json::Value, String> {
-    forge::require_github("GitHub workspace refresh")?;
+    if forge::current() == forge::Forge::GitLab {
+        let listed = crate::gitlab::list_all()?;
+        let workspaces: Vec<_> = listed.iter().map(|(workspace, _)| workspace.clone()).collect();
+        with_db_raw(state, |db| db.upsert_workspaces(&workspaces))?;
+        for (_, repos) in &listed {
+            with_db_raw(state, |db| db.upsert_repos(repos))?;
+        }
+        return with_db(state, |db| db.list_workspaces());
+    }
     let workspaces = forge::list_workspaces()?;
     with_db_raw(state, |db| db.upsert_workspaces(&workspaces))?;
     // One gh call per workspace; run them side by side so the slowest owner sets the wait.

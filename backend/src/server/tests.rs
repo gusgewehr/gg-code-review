@@ -1516,3 +1516,47 @@ fn gitlab_routes_are_guarded_and_never_echo_the_token() {
         .unwrap_err()
         .starts_with("forbidden"));
 }
+
+#[test]
+fn nested_workspace_login_is_percent_decoded_in_routes() {
+    let root = std::env::temp_dir().join(format!("ocr-nested-ws-{}", std::process::id()));
+    std::fs::create_dir_all(&root).unwrap();
+    let db = crate::db::Db::for_test_at(root.join("test.sqlite"));
+    let state = Arc::new(ServerState::new(ServerConfig {
+        bind: "127.0.0.1:0".to_string(),
+        db: db.clone(),
+        data_dir: root.clone(),
+        repos_dir: root.join("repos"),
+        auto_reindex: false,
+        poll_interval_seconds: 300,
+        api_token: None,
+    }));
+    let open = db.open().unwrap();
+    open.upsert_workspaces(&[crate::db::WorkspaceInput {
+        login: "g/sub".into(),
+        kind: "group".into(),
+    }])
+    .unwrap();
+    open.upsert_repos(&[crate::db::RepoInput {
+        workspace_login: "g/sub".into(),
+        owner: "g/sub".into(),
+        name: "proj".into(),
+        full_name: "g/sub/proj".into(),
+        description: None,
+        is_private: true,
+        default_branch: None,
+    }])
+    .unwrap();
+    let request = Request {
+        method: "GET".into(),
+        path: "/workspaces/g%2Fsub/repos".into(),
+        query: String::new(),
+        origin: None,
+        authorization: None,
+        content_type: None,
+        flow_secret: None,
+        body: Vec::new(),
+    };
+    let repos = route_dynamic(&request, &state).unwrap();
+    assert_eq!(repos[0]["fullName"], "g/sub/proj");
+}

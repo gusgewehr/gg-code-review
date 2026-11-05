@@ -289,6 +289,7 @@ pub fn run(mut config: ServerConfig) -> Result<(), String> {
 
     let state = Arc::new(ServerState::new(config.clone()));
     let github = crate::forge::current() == crate::forge::Forge::GitHub;
+    // GitLab indexing lands in Phase 5
     if config.auto_reindex && github {
         start_reindex_worker(state.clone());
     }
@@ -298,9 +299,7 @@ pub fn run(mut config: ServerConfig) -> Result<(), String> {
     start_untracked_run_sweeper(state.clone());
     start_review_result_reconciliation(config.db.clone(), config.repos_dir.clone());
     start_review_request_restoration(config.db.clone());
-    if github {
-        start_poll_scheduler(state.clone());
-    }
+    start_poll_scheduler(state.clone());
     start_runtime_cleanup_worker();
     crate::review_archive::retention::start_archive_retention_worker(state.clone());
 

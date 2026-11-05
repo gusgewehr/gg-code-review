@@ -552,6 +552,10 @@ pub(crate) fn handle_completed_review(
     no_new_changes: bool,
     has_findings: bool,
 ) {
+    if crate::forge::current() == crate::forge::Forge::GitLab {
+        log_auto_post(inputs, "not attempted: publishing to GitLab arrives in Phase 4");
+        return;
+    }
     let Ok(Some(run)) = db.review_run_by_id(inputs.run_id) else {
         log_auto_post(inputs, "not attempted: the review run is no longer readable");
         return;

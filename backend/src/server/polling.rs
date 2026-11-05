@@ -69,7 +69,6 @@ pub(crate) fn create_skill_version_http(request: &Request, state: &SharedState) 
 }
 
 pub(crate) fn poll_reviews(state: &SharedState) -> Result<serde_json::Value, String> {
-    forge::require_github("Pull request polling")?;
     if state.poll_running.swap(true, Ordering::Relaxed) {
         return with_db_read(state, |db| db.poll_status());
     }
@@ -173,22 +172,25 @@ pub(crate) fn run_poll_reviews(state: &SharedState) -> Result<serde_json::Value,
                     errors.push(format!("{} lifecycle: {error}", repo.full_name));
                 }
                 let mut resolved_candidates = HashMap::new();
-                if let Err(error) = poll_author_commands(state, &repo, &activation_candidates, |number| {
-                    let Some(pr) = forge::activation_pr(&repo.full_name, number)? else {
-                        return Ok(None);
-                    };
-                    if pr.changed_files.is_none() {
-                        return Err(format!("Missing file count for PR #{number}"));
+                // author commands read GitHub GraphQL
+                if forge::current() == forge::Forge::GitHub {
+                    if let Err(error) = poll_author_commands(state, &repo, &activation_candidates, |number| {
+                        let Some(pr) = forge::activation_pr(&repo.full_name, number)? else {
+                            return Ok(None);
+                        };
+                        if pr.changed_files.is_none() {
+                            return Err(format!("Missing file count for PR #{number}"));
+                        }
+                        let polled = poll_one_pr(state, &repo, &settings, &target_logins, &current_teams, &pr, false)?;
+                        if !polled.activation_eligible {
+                            return Ok(None);
+                        }
+                        let candidate = (polled.pr_id, polled.head);
+                        resolved_candidates.insert(number, candidate.clone());
+                        Ok(Some(candidate))
+                    }) {
+                        errors.push(format!("{} author commands: {error}", repo.full_name));
                     }
-                    let polled = poll_one_pr(state, &repo, &settings, &target_logins, &current_teams, &pr, false)?;
-                    if !polled.activation_eligible {
-                        return Ok(None);
-                    }
-                    let candidate = (polled.pr_id, polled.head);
-                    resolved_candidates.insert(number, candidate.clone());
-                    Ok(Some(candidate))
-                }) {
-                    errors.push(format!("{} author commands: {error}", repo.full_name));
                 }
                 activation_candidates.extend(resolved_candidates);
                 for (number, (pr_id, _)) in &activation_candidates {

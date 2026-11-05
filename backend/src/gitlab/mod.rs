@@ -13,7 +13,8 @@ pub(crate) use mrs::{
 };
 // list_all and valid_full_name are consumed by later phase 3 plans.
 #[allow(unused_imports)]
-pub(crate) use projects::{list_all, list_repos, list_workspaces, valid_full_name};
+pub(crate) use projects::valid_full_name;
+pub(crate) use projects::{list_all, list_repos, list_workspaces};
 
 #[cfg(test)]
 #[path = "read_tests.rs"]

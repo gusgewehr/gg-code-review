@@ -113,7 +113,7 @@ pub(crate) fn query_param(request: &Request, name: &str) -> Option<String> {
     })
 }
 
-fn percent_decode(value: &str) -> String {
+pub(crate) fn percent_decode(value: &str) -> String {
     let bytes = value.as_bytes();
     let mut out = Vec::with_capacity(bytes.len());
     let mut index = 0;
