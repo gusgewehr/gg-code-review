@@ -246,9 +246,12 @@ pub(crate) fn fetch_summary_refs(repo_path: &Path, number: i64, base_ref: &str) 
         command
     };
     let _ = fetch(&format!("+refs/heads/{branch}:refs/remotes/origin/{branch}"), false).output();
-    let status = fetch(&format!("{}:refs/ocr/summary-{number}", forge::current().pr_head_ref(number)), true)
-        .status()
-        .map_err(|error| error.to_string())?;
+    let status = fetch(
+        &format!("{}:refs/ocr/summary-{number}", forge::current().pr_head_ref(number)),
+        true,
+    )
+    .status()
+    .map_err(|error| error.to_string())?;
     if status.success() {
         Ok(())
     } else {
