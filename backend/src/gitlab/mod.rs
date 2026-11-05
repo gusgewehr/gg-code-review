@@ -3,9 +3,11 @@
 mod api;
 mod auth;
 pub(crate) mod ca;
+mod git_auth;
 mod mrs;
 mod projects;
 pub(crate) use auth::{login, logout, parse_token_body, status, ForgeStatus};
+pub(crate) use git_auth::apply_git_auth;
 pub(crate) use mrs::{
     current_login, list_open_prs, list_open_prs_for_login, live_pr_state, live_pr_state_cancellable, pr_description,
 };

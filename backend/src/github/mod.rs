@@ -25,7 +25,9 @@ mod review_requests;
 mod status_comments;
 mod transport;
 
-pub(crate) use auth::{apply_gh_host, apply_git_https_auth, create_private_dir, gh_host_detected, is_valid_gh_host};
+pub(crate) use auth::{
+    apply_gh_host, apply_git_https_auth, basic_auth_for, create_private_dir, gh_host_detected, is_valid_gh_host,
+};
 pub use auth::{auth_status, current_login, gh_host, run_auth_flow, sign_out};
 pub use comments::{
     dedupe_review_comments, find_review_id_by_marker, post_review, prepare_review, upsert_issue_comment_by_marker,

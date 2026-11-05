@@ -196,3 +196,60 @@ esac"#;
         let _ = std::fs::remove_dir_all(&dir);
     }
 }
+
+#[cfg(test)]
+mod git_auth_tests {
+    use super::super::git_auth::*;
+    use std::process::Command;
+
+    #[test]
+    fn config_token_lookup() {
+        let t = "hosts:\n  other.example:\n    token: glpat-OTHER\n  gl.example.com:\n    token: glpat-MINE\n    api_host: gl.example.com\n";
+        assert_eq!(
+            token_from_config_text(t, "gl.example.com").as_deref(),
+            Some("glpat-MINE")
+        );
+        for v in ["\"glpat-Q\"", "'glpat-Q'"] {
+            let t = format!("hosts:\n  h:\n    token: {v}\n");
+            assert_eq!(token_from_config_text(&t, "h").as_deref(), Some("glpat-Q"));
+        }
+        let t = "hosts:\n  h:\n    token: !!null glpat-T\n";
+        assert_eq!(token_from_config_text(t, "h").as_deref(), Some("glpat-T"));
+        assert_eq!(
+            token_from_config_text("hosts:\n  h:\n    api_host: h\n  o:\n    token: x\n", "h"),
+            None
+        );
+        assert_eq!(token_from_config_text("hosts:\n  h:\n    token: \n", "h"), None);
+        assert_eq!(token_from_config_text("garbage", "h"), None);
+    }
+
+    #[test]
+    fn extraheader_env_only() {
+        let mut cmd = Command::new("git");
+        apply_at(&mut cmd, "gl.example.com:8443", "glpat-X");
+        let env: std::collections::HashMap<_, _> = cmd
+            .get_envs()
+            .map(|(k, v)| {
+                (
+                    k.to_string_lossy().to_string(),
+                    v.unwrap().to_string_lossy().to_string(),
+                )
+            })
+            .collect();
+        assert_eq!(env["GIT_CONFIG_COUNT"], "1");
+        assert_eq!(env["GIT_CONFIG_KEY_0"], "http.https://gl.example.com:8443/.extraheader");
+        assert_eq!(
+            env["GIT_CONFIG_VALUE_0"],
+            format!(
+                "AUTHORIZATION: basic {}",
+                crate::github::basic_auth_for("oauth2", "glpat-X")
+            )
+        );
+        assert_eq!(env["GIT_TERMINAL_PROMPT"], "0");
+        assert_eq!(cmd.get_args().count(), 0);
+        assert_eq!(
+            crate::github::basic_auth_for("x-access-token", "t"),
+            crate::github::basic_auth_for("x-access-token", "t")
+        );
+    }
+}

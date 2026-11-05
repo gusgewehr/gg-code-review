@@ -258,8 +258,13 @@ pub(crate) fn apply_git_https_auth(command: &mut Command) {
 
 /// base64 of `x-access-token:<token>` for an HTTP Basic `Authorization` header.
 pub(crate) fn basic_auth_token(token: &str) -> String {
+    basic_auth_for("x-access-token", token)
+}
+
+/// base64 of `<user>:<token>` for an HTTP Basic `Authorization` header.
+pub(crate) fn basic_auth_for(user: &str, token: &str) -> String {
     const TABLE: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    let bytes = format!("x-access-token:{token}").into_bytes();
+    let bytes = format!("{user}:{token}").into_bytes();
     let mut out = String::new();
     let mut i = 0;
     while i < bytes.len() {

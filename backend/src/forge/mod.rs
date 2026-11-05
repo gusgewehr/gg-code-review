@@ -157,6 +157,13 @@ pub(crate) fn gh_host() -> String {
     }
 }
 
+pub(crate) fn apply_git_https_auth(command: &mut std::process::Command) {
+    match current() {
+        Forge::GitHub => crate::github::apply_git_https_auth(command),
+        Forge::GitLab => crate::gitlab::apply_git_auth(command),
+    }
+}
+
 pub(crate) fn require_github(what: &str) -> Result<(), String> {
     if current() == Forge::GitLab {
         return Err(format!("{what} is not supported yet on GitLab."));
