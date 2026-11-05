@@ -377,6 +377,10 @@ impl RetentionCoordinator {
     }
 
     fn backfill_merges(&self, store: &ArchiveStore, db: &Database, cancel: &AtomicBool) -> Result<(), String> {
+        // GitLab merged state comes from polling reconcile_pr_lifecycle (merged_at).
+        if crate::forge::current() == crate::forge::Forge::GitLab {
+            return Ok(());
+        }
         let run_ids = store
             .distinct_review_receipt_run_ids()
             .map_err(|e| format!("Could not get distinct receipt run IDs: {e:?}"))?;

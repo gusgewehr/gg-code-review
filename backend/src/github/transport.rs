@@ -5,6 +5,7 @@ pub(crate) fn gh_capture(args: &[&str]) -> Result<Vec<u8>, String> {
 }
 
 pub(crate) fn gh_capture_cancellable(args: &[&str], cancel: &std::sync::atomic::AtomicBool) -> Result<Vec<u8>, String> {
+    crate::forge::require_github("This GitHub operation")?;
     use std::process::Stdio;
     use std::sync::atomic::Ordering;
     use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
@@ -113,6 +114,9 @@ pub(crate) fn gh_json<T: for<'de> Deserialize<'de>>(args: &[&str]) -> Result<T, 
 }
 
 pub(crate) fn run_raw(command: &str, args: &[&str]) -> Result<Vec<u8>, String> {
+    if command == "gh" {
+        crate::forge::require_github("This GitHub operation")?;
+    }
     let mut process = Command::new(command);
     process.args(args);
     if command == "gh" {

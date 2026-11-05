@@ -55,7 +55,8 @@ pub fn capture(
         .map_err(|e| e.to_string())?;
     // An offline review has the checkout and nothing else: no submodules and no linked
     // repositories to pin, so its archive is the checkout's own.
-    let archive = if inputs.offline {
+    // shortcut: pinned dependencies (submodules, linked repos) resolve via gh only; GitLab archives keep the checkout's own evidence
+    let archive = if inputs.offline || crate::forge::current() == crate::forge::Forge::GitLab {
         archive
     } else {
         crate::review::dependencies::capture(

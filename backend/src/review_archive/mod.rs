@@ -267,7 +267,7 @@ impl Scope {
         if self.host.len() > 253
             || !crate::forge::is_valid_gh_host(&self.host)
             || self.repository.len() > 256
-            || names.len() != 2
+            || names.len() < 2
             || names.iter().any(|name| {
                 name.is_empty()
                     || matches!(*name, "." | "..")

@@ -13,6 +13,21 @@ fn scope() -> Scope {
     }
 }
 
+#[test]
+fn scope_accepts_nested_projects_only_when_well_formed() {
+    let mut s = scope();
+    s.repository = "g/sub/proj".into();
+    s.host = "gl.example.com:8443".into();
+    assert!(s.validate().is_ok());
+    for bad in ["a", "a//b", "g/../x", "g/./x", "/a/b", "a/b/", "a/b c"] {
+        s.repository = bad.into();
+        assert!(matches!(s.validate(), Err(Error::Contract)), "{bad}");
+    }
+    s.repository = format!("a/{}", "b".repeat(255));
+    assert!(s.validate().is_err());
+    assert!(scope().validate().is_ok());
+}
+
 fn source(path: &str, revision: &str, content: &[u8]) -> SourceEntry {
     SourceEntry {
         path: path.into(),
