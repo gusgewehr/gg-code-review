@@ -232,11 +232,12 @@ fn stale_head_aborts_before_any_write() {
 }
 
 #[test]
-fn head_change_before_summary_aborts_without_summary() {
-    let extra = r#"*merge_requests/7) n=$(cat "$d/mrn" 2>/dev/null || echo 0); n=$((n+1)); echo $n > "$d/mrn"; if [ "$n" -ge 2 ]; then cat "$d/mr_bad.json"; else cat "$d/mr.json"; fi;;"#;
+fn head_change_during_inline_loop_stops_remaining_writes_and_summary() {
+    // MR fetches: initial check, before inline 1 (same head), before inline 2 (new push).
+    let extra = r#"*merge_requests/7) n=$(cat "$d/mrn" 2>/dev/null || echo 0); n=$((n+1)); echo $n > "$d/mrn"; if [ "$n" -ge 3 ]; then cat "$d/mr_bad.json"; else cat "$d/mr.json"; fi;;"#;
     let (dir, ctx) = fixture("p-race", extra);
     put(&dir, "mr_bad.json", &mr_json("opened", "newer"));
-    assert!(run(&ctx, &payload(vec![comment(1, "a.rs", 2, "RIGHT")])).is_err());
+    assert!(run(&ctx, &three()).unwrap_err().contains("changed after the review"));
     let w = writes(&dir);
     assert_eq!(w.len(), 1);
     assert!(w[0].ends_with("/discussions"));

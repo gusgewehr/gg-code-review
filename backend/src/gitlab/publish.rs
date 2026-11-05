@@ -140,6 +140,8 @@ pub(super) fn post_review_at(
                 p
             })
         });
+        // A push during a long loop must stop the remaining writes, not only the summary.
+        check_head(ctx, full_name, number, commit_id, cancel)?;
         post_comment(ctx, full_name, number, position, body, &fallback_body(body, path, line))?;
     }
 
