@@ -195,6 +195,22 @@ esac"#;
         assert_eq!(calls(&dir).len(), before + 1);
         let _ = std::fs::remove_dir_all(&dir);
     }
+
+    #[test]
+    fn open_list_fills_base_tip_once_per_branch() {
+        let body = r#"case "$*" in
+"api --paginate projects/g%2Fp/merge_requests?state=opened&per_page=100") echo '[{"iid":1,"title":"a","author":{"username":"u"},"sha":"h1","target_branch":"main"},{"iid":2,"title":"b","author":{"username":"u"},"sha":"h2","target_branch":"main"},{"iid":3,"title":"c","author":{"username":"u"},"sha":"h3","target_branch":"rel"}]';;
+"api projects/g%2Fp/repository/branches/main") echo '{"commit":{"id":"mainsha"}}';;
+"api projects/g%2Fp/repository/branches/rel") echo '{"commit":{"id":"relsha"}}';;
+*) exit 1;;
+esac"#;
+        let (dir, bin) = setup("open-tips", body);
+        let prs = list_open_at(&bin, "h", &dir, "g/p", 0).unwrap();
+        let bases: Vec<_> = prs.iter().map(|p| p.base_ref_oid.as_deref()).collect();
+        assert_eq!(bases, [Some("mainsha"), Some("mainsha"), Some("relsha")]);
+        assert_eq!(calls(&dir).len(), 3);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 }
 
 #[cfg(test)]
