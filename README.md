@@ -69,6 +69,8 @@ Everything else is configured in the app under **Settings** (providers, reposito
 | `OCR_VERSION` | `latest` | Image tag used with `docker-compose.images.yml`, for example `0.1.0`. |
 | `OCR_REVIEW_DEBUG_DIR` | empty | Path inside the server container (for example `/data/review-debug`) where private review debug artifacts, which contain pull request code, are written. Leave empty in normal use. |
 
+Running against a self-hosted GitLab? See [docs/gitlab.md](docs/gitlab.md).
+
 For example, with GitHub Enterprise:
 
 ```bash

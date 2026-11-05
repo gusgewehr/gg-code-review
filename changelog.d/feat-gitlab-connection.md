@@ -18,6 +18,13 @@
   never approves, requests changes on or merges a merge request; on GitLab the Request changes
   auto-post mode publishes comments.
 
+- GitLab deploys index the selected projects (file metadata, package graph and symbols) the same way
+  as GitHub, including projects in nested subgroups, and review skills work unchanged.
+
+- In a GitLab deploy the web UI says merge request / MR, shows `!iid`, labels links "Open on GitLab"
+  with a generic icon and opens the merge request on your GitLab instance. Approve and Request changes
+  are not offered there. Setup is described in `docs/gitlab.md`.
+
 ### Changed
 
 - The server pins the forge and host on first start and refuses to start if they change over
