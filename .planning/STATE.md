@@ -2,15 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-last_updated: 2026-11-05T23:05:32.139Z
+status: Awaiting next milestone
+stopped_at: Milestone complete (Phase 05 was final phase)
+last_updated: "2026-11-05T23:07:43.104Z"
+last_activity: 2026-11-05 — Milestone v1.0 completed and archived
 progress:
   total_phases: 5
   completed_phases: 5
   total_plans: 17
   completed_plans: 17
   percent: 100
-stopped_at: Milestone complete (Phase 05 was final phase)
 ---
 
 # Project State
@@ -20,16 +21,14 @@ stopped_at: Milestone complete (Phase 05 was final phase)
 See: .planning/PROJECT.md (updated 2026-11-05)
 
 **Core value:** Um MR aberto numa instância GitLab self-hosted (com CA interna) é revisado e recebe findings inline automaticamente, sem quebrar nada do fluxo GitHub existente.
-**Current focus:** Milestone v1.0 implementada; validação contra o GitLab real pendente (HUMAN-UAT de cada fase)
+**Current focus:** Planning next milestone (v1.0 shipped; real-GitLab UAT pending with the user)
 
 ## Current Position
 
-Phase: 5 of 5 (Indexação, skills, UI e documentação)
-Plan: 3 of 3 in current phase
-Status: Milestone complete
-Last activity: 2026-11-05 — Fase 5 verificada (human_needed); auditoria da milestone v1.0
-
-Progress: [##########] 100%
+Phase: Milestone v1.0 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-11-05 — Milestone v1.0 completed and archived
 
 ## Performance Metrics
 
@@ -69,12 +68,23 @@ None yet.
 
 ## Deferred Items
 
+Items acknowledged and deferred at milestone close on 2026-11-05:
+
 | Category | Item | Status | Deferred At |
 |----------|------|--------|-------------|
-| UAT | Checks contra GitLab real (01..05-HUMAN-UAT.md) | pending user run | v1.0 close |
+| uat_gap | 01-HUMAN-UAT.md (4 scenarios) | partial | v1.0 close |
+| uat_gap | 02-HUMAN-UAT.md (3 scenarios) | partial | v1.0 close |
+| uat_gap | 03-HUMAN-UAT.md (5 scenarios) | partial | v1.0 close |
+| uat_gap | 04-HUMAN-UAT.md (8 scenarios) | partial | v1.0 close |
+| uat_gap | 05-HUMAN-UAT.md (5 scenarios) | partial | v1.0 close |
+| verification_gap | 01..05-VERIFICATION.md | human_needed | v1.0 close |
 
 ## Session Continuity
 
 Last session: 2026-11-05
 Stopped at: Milestone complete (Phase 05 was final phase)
 Resume file: None
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone

@@ -21,20 +21,22 @@ Um MR aberto numa instância GitLab self-hosted (com CA interna) é revisado e r
 - ✓ Indexação de repositórios (metadados, grafo de pacotes/imports, símbolos leves) e skills — existente
 - ✓ GitHub Enterprise via `OCR_GH_HOST` — existente
 - ✓ Settings: Providers, Repository access, PR selection, Integrations; engine picker no top bar — existente
+- ✓ Camada de provider de hospedagem de código (GitHub | GitLab) escolhida por deploy; o código fora de `backend/src/github/` deixa de chamar `github::` diretamente — v1.0 (implementado; UAT contra GitLab real pendente)
+- ✓ Autenticação no GitLab self-hosted via `glab` CLI (`glab auth login --hostname`), com host configurado por variável (ex.: `OCR_GITLAB_HOST`) — v1.0 (implementado; UAT contra GitLab real pendente)
+- ✓ Confiança em CA interna/certificado próprio para `glab` e `git fetch` dentro dos containers — v1.0 (implementado; UAT contra GitLab real pendente)
+- ✓ Listar workspaces (grupos/subgrupos) e projetos GitLab em Repository access — v1.0 (implementado; UAT contra GitLab real pendente)
+- ✓ Polling de MRs abertos e detecção de novo head, enfileirando revisões como hoje — v1.0 (implementado; UAT contra GitLab real pendente)
+- ✓ Preparação da revisão com base/head/merge-base vivos do MR via fetch de refs (`refs/merge-requests/<iid>/head`), sem checkout — v1.0 (implementado; UAT contra GitLab real pendente)
+- ✓ Publicação de findings como discussões inline no diff do MR (posição com base/start/head SHA), idempotente e com os marcadores `<!-- ocr-... -->` — v1.0 (implementado; UAT contra GitLab real pendente)
+- ✓ Comentário de status e resumo da revisão no MR (notes), incluindo seção de sugestões quando ligada — v1.0 (implementado; UAT contra GitLab real pendente)
+- ✓ Indexação de repositórios e skills funcionando para projetos GitLab — v1.0 (implementado; UAT contra GitLab real pendente)
+- ✓ UI mostra termos e links corretos do GitLab (MR, `!iid`, URLs da instância) quando o deploy é GitLab — v1.0 (implementado; UAT contra GitLab real pendente)
+- ✓ Fluxo GitHub continua passando em todos os testes e smokes existentes — v1.0 (asserções inalteradas; smokes Docker e PR real ficam no HUMAN-UAT da fase 1)
 
 ### Active
 
-- [ ] Camada de provider de hospedagem de código (GitHub | GitLab) escolhida por deploy; o código fora de `backend/src/github/` deixa de chamar `github::` diretamente
-- [ ] Autenticação no GitLab self-hosted via `glab` CLI (`glab auth login --hostname`), com host configurado por variável (ex.: `OCR_GITLAB_HOST`)
-- [ ] Confiança em CA interna/certificado próprio para `glab` e `git fetch` dentro dos containers
-- [ ] Listar workspaces (grupos/subgrupos) e projetos GitLab em Repository access
-- [ ] Polling de MRs abertos e detecção de novo head, enfileirando revisões como hoje
-- [ ] Preparação da revisão com base/head/merge-base vivos do MR via fetch de refs (`refs/merge-requests/<iid>/head`), sem checkout
-- [ ] Publicação de findings como discussões inline no diff do MR (posição com base/start/head SHA), idempotente e com os marcadores `<!-- ocr-... -->`
-- [ ] Comentário de status e resumo da revisão no MR (notes), incluindo seção de sugestões quando ligada
-- [ ] Indexação de repositórios e skills funcionando para projetos GitLab
-- [ ] UI mostra termos e links corretos do GitLab (MR, `!iid`, URLs da instância) quando o deploy é GitLab
-- [ ] Fluxo GitHub continua passando em todos os testes e smokes existentes
+- [ ] Validar a v1.0 contra a instância GitLab real (spike `docker/gitlab-spike.py` e os 25 cenários de HUMAN-UAT)
+- [ ] Próxima milestone a definir com `/gsd-new-milestone` (candidatos: PUB-V2-01..03, MISC-V2-01..02)
 
 ### Out of Scope
 
@@ -54,6 +56,7 @@ Um MR aberto numa instância GitLab self-hosted (com CA interna) é revisado e r
 - O código GitHub vive em `backend/src/github/` (~2,6k linhas, chama `gh`); 26 arquivos fora dele chamam `github::` diretamente. O refspec de fetch é específico do GitHub (`CONCERNS.md`).
 - Runners não têm acesso a Git/GitHub nem ao banco; fetch e publicação acontecem no `server`. O egress dos runners só libera hosts de AI, então o GitLab não entra na allowlist dos runners.
 - Ambiente-alvo do autor: GitLab self-hosted com HTTPS por CA corporativa interna.
+- Estado após v1.0: `backend/src/forge/` e `backend/src/gitlab/` adicionados (~5k linhas no diff vs main, 84 arquivos); docs em `docs/gitlab.md`.
 - Licença PolyForm Small Business 1.0.0; upstream tem CLA e regras em `AGENTS.md`/`CONTRIBUTING.md`.
 
 ## Constraints
@@ -69,14 +72,14 @@ Um MR aberto numa instância GitLab self-hosted (com CA interna) é revisado e r
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| GitLab ao lado do GitHub atrás de uma camada de provider | Manter o produto original funcionando e o diff reaproveitável | — Pending |
-| Autenticação via `glab` CLI | Espelha o uso de `gh`; sem tokens gerenciados pelo app | — Pending |
-| Um provider por deploy (GitHub ou GitLab) | Escolha do usuário; evita misturar repositórios de providers no schema e na UI | — Pending |
-| Uma instância GitLab por deploy via variável de host | Igual a `OCR_GH_HOST`; suficiente para o caso real | — Pending |
-| Polling, sem webhooks | Mesmo modelo do produto; não exige expor o server para o GitLab | — Pending |
-| Paridade completa na v1 (inline, status, resumo, indexação) | Critério de pronto é um MR real revisado com findings inline | — Pending |
-| Login do GitLab por formulário na UI (PAT repassado ao `glab` via stdin) | Escolha do usuário; mais conveniente que o terminal | — Pending |
-| Spike contra a instância real antes de construir GitLab | Pesquisa deixou formato de token, paginação, CA e `/versions` sem verificação | — Pending |
+| GitLab ao lado do GitHub atrás de uma camada de provider | Manter o produto original funcionando e o diff reaproveitável | ✓ Good — `forge::` seam, GitHub byte-identical (estático) |
+| Autenticação via `glab` CLI | Espelha o uso de `gh`; sem tokens gerenciados pelo app | ✓ Good — glab 1.128.0 fixo na imagem do server |
+| Um provider por deploy (GitHub ou GitLab) | Escolha do usuário; evita misturar repositórios de providers no schema e na UI | ✓ Good — guarda de pin na inicialização |
+| Uma instância GitLab por deploy via variável de host | Igual a `OCR_GH_HOST`; suficiente para o caso real | ✓ Good — `OCR_GITLAB_HOST` |
+| Polling, sem webhooks | Mesmo modelo do produto; não exige expor o server para o GitLab | ✓ Good — mesmo `poll_one_pr` para MRs |
+| Paridade completa na v1 (inline, status, resumo, indexação) | Critério de pronto é um MR real revisado com findings inline | — Pending — implementado, falta UAT real |
+| Login do GitLab por formulário na UI (PAT repassado ao `glab` via stdin) | Escolha do usuário; mais conveniente que o terminal | ✓ Good — token nunca persiste no app |
+| Spike contra a instância real antes de construir GitLab | Pesquisa deixou formato de token, paginação, CA e `/versions` sem verificação | ⚠️ Revisit — kit pronto, execução ficou com o usuário; `shortcut:` dependem dele |
 | Construir para uso próprio primeiro; PR upstream é bônus | Usuário não quer depender da discussão com a BridgLabs agora | — Pending |
 
 ## Evolution
@@ -97,4 +100,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-04 after initialization*
+*Last updated: 2026-11-05 after v1.0 milestone*
