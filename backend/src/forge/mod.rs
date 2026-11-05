@@ -84,18 +84,26 @@ pub(crate) fn require_github(what: &str) -> Result<(), String> {
     Ok(())
 }
 
+fn gitlab_commit_url(host: &str, full_name: &str, sha: &str) -> String {
+    format!("https://{host}/{full_name}/-/commit/{sha}")
+}
+
+fn gitlab_review_url(host: &str, full_name: &str, number: i64) -> String {
+    format!("https://{host}/{full_name}/-/merge_requests/{number}")
+}
+
 impl Forge {
     pub(crate) fn commit_url(self, full_name: &str, sha: &str) -> String {
         match self {
             Forge::GitHub => format!("https://github.com/{full_name}/commit/{sha}"),
-            Forge::GitLab => format!("https://{}/{full_name}/-/commit/{sha}", host()),
+            Forge::GitLab => gitlab_commit_url(&host(), full_name, sha),
         }
     }
 
     pub(crate) fn review_url(self, full_name: &str, number: i64, review_id: i64) -> String {
         match self {
             Forge::GitHub => format!("https://github.com/{full_name}/pull/{number}#pullrequestreview-{review_id}"),
-            Forge::GitLab => format!("https://{}/{full_name}/-/merge_requests/{number}", host()),
+            Forge::GitLab => gitlab_review_url(&host(), full_name, number),
         }
     }
 
@@ -151,12 +159,12 @@ mod tests {
     #[test]
     fn gitlab_urls_and_refspec() {
         assert_eq!(
-            Forge::GitLab.commit_url("g/p", "abc"),
-            "https://github.com/g/p/-/commit/abc"
+            gitlab_commit_url("gl.example.com", "g/p", "abc"),
+            "https://gl.example.com/g/p/-/commit/abc"
         );
         assert_eq!(
-            Forge::GitLab.review_url("g/p", 7, 0),
-            "https://github.com/g/p/-/merge_requests/7"
+            gitlab_review_url("gl.example.com", "g/p", 7),
+            "https://gl.example.com/g/p/-/merge_requests/7"
         );
         assert_eq!(Forge::GitLab.pr_head_ref(7), "refs/merge-requests/7/head");
     }
