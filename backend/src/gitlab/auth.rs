@@ -9,8 +9,8 @@ use std::time::{Duration, Instant};
 #[derive(Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct StatusError {
-    code: &'static str,
-    message: String,
+    pub(super) code: &'static str,
+    pub(super) message: String,
 }
 
 #[derive(Serialize, Debug)]
@@ -98,7 +98,7 @@ const NETWORK_MARKERS: &[&str] = &[
     "dial tcp",
 ];
 
-fn classify(text: &str, host: &str) -> StatusError {
+pub(super) fn classify(text: &str, host: &str) -> StatusError {
     let lower = text.to_lowercase();
     let code = if NETWORK_MARKERS.iter().any(|m| lower.contains(m)) {
         Code::UnreachableOrTls
@@ -163,7 +163,9 @@ pub(crate) fn parse_token_body(body: &[u8]) -> Result<String, String> {
     Ok(token.to_string())
 }
 
-fn config_dir() -> PathBuf {
+const SHORT: Duration = Duration::from_secs(20);
+
+pub(super) fn config_dir() -> PathBuf {
     let dir = PathBuf::from(std::env::var("OCR_DATA_DIR").unwrap_or_else(|_| "data".into())).join("glab");
     let _ = crate::github::create_private_dir(&dir);
     dir
@@ -181,7 +183,14 @@ fn apply_glab_env(cmd: &mut Command, host: &str, config_dir: &Path) {
         .env_remove("GLAB_TOKEN");
 }
 
-fn run_glab(bin: &Path, host: &str, dir: &Path, args: &[&str], stdin: Option<&str>) -> Result<Output, String> {
+pub(super) fn run_glab(
+    bin: &Path,
+    host: &str,
+    dir: &Path,
+    args: &[&str],
+    stdin: Option<&str>,
+    timeout: Duration,
+) -> Result<Output, String> {
     let mut cmd = Command::new(bin);
     cmd.args(args)
         .stdin(Stdio::piped())
@@ -206,7 +215,7 @@ fn run_glab(bin: &Path, host: &str, dir: &Path, args: &[&str], stdin: Option<&st
     };
     let out_reader = drain(child.stdout.take().map(|p| Box::new(p) as _));
     let err_reader = drain(child.stderr.take().map(|p| Box::new(p) as _));
-    let deadline = Instant::now() + Duration::from_secs(20);
+    let deadline = Instant::now() + timeout;
     let status = loop {
         match child.try_wait() {
             Ok(Some(status)) => break status,
@@ -226,7 +235,7 @@ fn run_glab(bin: &Path, host: &str, dir: &Path, args: &[&str], stdin: Option<&st
     })
 }
 
-fn text_of(out: &Output) -> String {
+pub(super) fn text_of(out: &Output) -> String {
     format!(
         "{}\n{}",
         String::from_utf8_lossy(&out.stdout),
@@ -248,7 +257,7 @@ fn status_at(bin: &Path, host: &str, dir: &Path) -> ForgeStatus {
     if !has_stored_login(dir, host) && !dir.join("config.yml").exists() {
         return status;
     }
-    let user = match run_glab(bin, host, dir, &["api", "user"], None) {
+    let user = match run_glab(bin, host, dir, &["api", "user"], None, SHORT) {
         Ok(out) if out.status.success() => out,
         Ok(out) => {
             let text = redact(&text_of(&out), "");
@@ -276,7 +285,7 @@ fn status_at(bin: &Path, host: &str, dir: &Path) -> ForgeStatus {
     };
     status.login = Some(login.to_string());
     status.logged_in = true;
-    if let Ok(out) = run_glab(bin, host, dir, &["api", "personal_access_tokens/self"], None) {
+    if let Ok(out) = run_glab(bin, host, dir, &["api", "personal_access_tokens/self"], None, SHORT) {
         if out.status.success() {
             let own: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap_or_default();
             status.expires_at = own["expires_at"].as_str().map(str::to_string);
@@ -304,7 +313,7 @@ fn login_at(bin: &Path, host: &str, dir: &Path, token: String) -> Result<ForgeSt
         "--insecure-storage",
     ];
     let had_login = has_stored_login(dir, host);
-    let out = run_glab(bin, host, dir, &args, Some(&format!("{token}\n")))?;
+    let out = run_glab(bin, host, dir, &args, Some(&format!("{token}\n")), SHORT)?;
     let text = redact(&text_of(&out), &token);
     drop(token); // shortcut: no zeroize crate, the String is only dropped
     if !out.status.success() {
@@ -327,7 +336,7 @@ fn login_at(bin: &Path, host: &str, dir: &Path, token: String) -> Result<ForgeSt
 }
 
 fn logout_at(bin: &Path, host: &str, dir: &Path) -> Result<(), String> {
-    let out = run_glab(bin, host, dir, &["auth", "logout", "--hostname", host], None)?;
+    let out = run_glab(bin, host, dir, &["auth", "logout", "--hostname", host], None, SHORT)?;
     let text = redact(&text_of(&out), "");
     if out.status.success() || text.to_lowercase().contains("not logged in") {
         return Ok(());
@@ -339,24 +348,28 @@ fn logout_at(bin: &Path, host: &str, dir: &Path) -> Result<(), String> {
 }
 
 // Serializes glab calls that read or write the shared config.yml.
-static GLAB_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+static GLAB_LOCK: std::sync::RwLock<()> = std::sync::RwLock::new(());
 
-fn glab_lock() -> std::sync::MutexGuard<'static, ()> {
-    GLAB_LOCK.lock().unwrap_or_else(|e| e.into_inner())
+fn glab_write() -> std::sync::RwLockWriteGuard<'static, ()> {
+    GLAB_LOCK.write().unwrap_or_else(|e| e.into_inner())
+}
+
+pub(super) fn glab_read() -> std::sync::RwLockReadGuard<'static, ()> {
+    GLAB_LOCK.read().unwrap_or_else(|e| e.into_inner())
 }
 
 pub(crate) fn login(host: &str, token: &str) -> Result<ForgeStatus, String> {
-    let _guard = glab_lock();
+    let _guard = glab_write();
     login_at(Path::new("glab"), host, &config_dir(), token.to_string())
 }
 
 pub(crate) fn status(host: &str) -> ForgeStatus {
-    let _guard = glab_lock();
+    let _guard = glab_read();
     status_at(Path::new("glab"), host, &config_dir())
 }
 
 pub(crate) fn logout(host: &str) -> Result<(), String> {
-    let _guard = glab_lock();
+    let _guard = glab_write();
     logout_at(Path::new("glab"), host, &config_dir())
 }
 
