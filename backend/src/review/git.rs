@@ -19,7 +19,7 @@ pub(crate) fn kill_tree(pid: u32, child: &mut std::process::Child) {
 /// Fetch the PR head into a private local ref via git transport (github.com),
 /// never the REST API. Returns the head SHA. Does not touch the working tree.
 pub(crate) fn fetch_pr_head(repo_path: &Path, number: i64, cancel: &AtomicBool) -> Result<String, String> {
-    let refspec = format!("refs/pull/{number}/head:refs/ocr/pr-{number}");
+    let refspec = format!("{}:refs/ocr/pr-{number}", forge::current().pr_head_ref(number));
     git_capture(
         repo_path,
         &["fetch", "origin", &refspec, "--no-tags", "--force", "--quiet"],
@@ -455,7 +455,7 @@ pub(crate) fn git_capture(
     // Host-aware HTTPS auth shared with clone/fetch elsewhere, so review git
     // transports authenticate against the resolved (possibly Enterprise) host
     // rather than a duplicated, drift-prone local copy.
-    crate::github::apply_git_https_auth(&mut command);
+    crate::forge::apply_git_https_auth(&mut command);
     let mut child = command.spawn().map_err(|error| error.to_string())?;
     let started = Instant::now();
     // Most git calls finish in a few milliseconds; the wait grows to 80ms only for long ones.

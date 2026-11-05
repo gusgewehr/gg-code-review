@@ -158,12 +158,12 @@ pub(crate) fn health(state: &SharedState) -> Result<serde_json::Value, String> {
 
 pub(crate) fn github_auth_status() -> Result<serde_json::Value, String> {
     let _ = crate::accounts::sandbox_sync::sync_app_auth();
-    serde_json::to_value(github::auth_status()).map_err(|error| error.to_string())
+    serde_json::to_value(forge::auth_status()).map_err(|error| error.to_string())
 }
 
 pub(crate) fn github_auth_logout(request: &Request) -> Result<serde_json::Value, String> {
     require_trusted_origin(request)?;
-    github::sign_out()?;
+    forge::sign_out()?;
     let _ = crate::accounts::sandbox_sync::sync_app_auth();
     Ok(serde_json::json!({ "ok": true }))
 }
@@ -220,7 +220,7 @@ pub(crate) fn start_github_auth(request: &Request, state: &SharedState) -> Resul
                 events.push(payload);
             }
         };
-        github::run_auth_flow(&cancel, &action, &mut emit);
+        forge::run_auth_flow(&cancel, &action, &mut emit);
         if let Ok(mut slot) = slot.lock() {
             *slot = None;
         }
@@ -317,13 +317,13 @@ pub(crate) fn get_archive_storage_status(state: &SharedState) -> Result<serde_js
 }
 
 pub(crate) fn refresh_github_workspaces(state: &SharedState) -> Result<serde_json::Value, String> {
-    let workspaces = github::list_workspaces()?;
+    let workspaces = forge::list_workspaces()?;
     with_db_raw(state, |db| db.upsert_workspaces(&workspaces))?;
     // One gh call per workspace; run them side by side so the slowest owner sets the wait.
     let listed: Vec<_> = std::thread::scope(|scope| {
         let handles: Vec<_> = workspaces
             .iter()
-            .map(|workspace| scope.spawn(move || github::list_repos(&workspace.login)))
+            .map(|workspace| scope.spawn(move || forge::list_repos(&workspace.login)))
             .collect();
         handles.into_iter().filter_map(|handle| handle.join().ok()).collect()
     });

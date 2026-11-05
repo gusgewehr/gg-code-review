@@ -459,7 +459,7 @@ impl RetentionCoordinator {
 
         let query = format!("query{{{}}}", fields.join(" "));
         let response_bytes =
-            crate::github::gh_capture_cancellable(&["api", "graphql", "-f", &format!("query={query}")], cancel)?;
+            crate::forge::gh_capture_cancellable(&["api", "graphql", "-f", &format!("query={query}")], cancel)?;
 
         let response: serde_json::Value =
             serde_json::from_slice(&response_bytes).map_err(|e| format!("Invalid JSON from GitHub GraphQL: {e}"))?;
@@ -488,7 +488,7 @@ impl RetentionCoordinator {
                 if state.eq_ignore_ascii_case("MERGED") {
                     let merged_at = pr["mergedAt"]
                         .as_str()
-                        .and_then(crate::github::iso8601_to_epoch_ms)
+                        .and_then(crate::forge::iso8601_to_epoch_ms)
                         .ok_or("GitHub returned a merged PR without a valid merge timestamp")?;
                     db.set_pr_merged_at(*pr_id, merged_at)?;
                 } else if state.eq_ignore_ascii_case("CLOSED") {

@@ -1,6 +1,7 @@
 mod accounts;
 pub mod bench;
 pub mod db;
+mod forge;
 pub mod github;
 pub mod indexer;
 pub mod local;

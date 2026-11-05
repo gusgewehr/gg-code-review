@@ -3,7 +3,7 @@ use super::*;
 pub(crate) fn github_status() -> ToolStatus {
     let mut probe = Command::new("gh");
     probe.args(["api", "user", "--jq", ".login"]);
-    crate::github::apply_gh_host(&mut probe);
+    crate::forge::apply_gh_host(&mut probe);
     match probe.output() {
         Ok(output) => {
             let text = format!(

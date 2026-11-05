@@ -1,5 +1,5 @@
 use super::*;
-use crate::github::StatusCommentApi;
+use crate::forge::StatusCommentApi;
 
 const STATUS_PUBLICATION_PREFIX: &str = "<!-- ocr-status-publication:v1 run=";
 const STATUS_PUBLICATION_SUFFIX: &str = " -->";
@@ -186,7 +186,7 @@ pub(crate) fn retire_clean_comments_after_findings(db: &Database, full_name: &st
     };
     let marker = crate::db::result_marker_key(full_name, number, &installation_id);
     let _ = retire_clean_comments_before(
-        &mut github::GitHubStatusComments,
+        &mut forge::GitHubStatusComments,
         full_name,
         number,
         &marker,

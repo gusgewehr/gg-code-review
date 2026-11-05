@@ -1,4 +1,4 @@
-use crate::github::{StatusComment, StatusCommentApi};
+use crate::forge::{StatusComment, StatusCommentApi};
 
 const PUBLISHER: i64 = 77;
 

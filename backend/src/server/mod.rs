@@ -14,7 +14,7 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use crate::db::{Database, Db, Repo, ReviewResult, ReviewResultInput};
 use crate::state::{IndexProgressEvent, ReviewJob};
-use crate::{github, indexer, local, review};
+use crate::{forge, indexer, local, review};
 
 mod comment_activation;
 mod http;

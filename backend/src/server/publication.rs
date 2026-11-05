@@ -38,7 +38,7 @@ pub(crate) fn validate_review_scope_outcome(
     expected_head: &str,
     repo_path: &Path,
 ) -> Result<(), LiveHeadValidationError> {
-    let live = github::live_pr_state(full_name, number).map_err(LiveHeadValidationError::Unavailable)?;
+    let live = forge::live_pr_state(full_name, number).map_err(LiveHeadValidationError::Unavailable)?;
     if live.state != "OPEN" || live.head_sha != expected_head {
         return Err(LiveHeadValidationError::Stale(
             "PR state/head changed; refresh the review".into(),
@@ -117,7 +117,7 @@ pub(crate) fn review_result_body(
     let data = format!(
         "<!-- ocr-result-data:v1 head={observed_head_sha} reviewed_head={reviewed_head_sha} observation={observation} state={effective_state} inherited_from={inherited_from} reviewer={reviewer_version} skill={skill_version} -->"
     );
-    let commit_url = |sha: &str| format!("https://github.com/{full_name}/commit/{sha}");
+    let commit_url = |sha: &str| forge::current().commit_url(full_name, sha);
     let visible = match (observation, effective_state) {
         ("no_new_changes", "clean") => format!(
             "### ✅ No new issues\n\nOpenCodeReview checked [`{}`]({}) and found no new changes since the clean review of [`{}`]({}).",
@@ -392,7 +392,7 @@ pub(crate) fn publish_reserved_review_result(
     // so their retry can adopt the comment by run instead of posting again.
     let body = with_status_publication_marker(body, &result.marker_key, run_id);
     let posted = replace_clean_comment(
-        &mut github::GitHubStatusComments,
+        &mut forge::GitHubStatusComments,
         full_name,
         number,
         &result.marker_key,
@@ -698,12 +698,7 @@ pub(crate) fn handle_completed_review(
         ) {
             Ok(AutoPostReview::Posted(review_id)) => {
                 log_auto_post(inputs, "posted");
-                let review_url = review_id.map(|id| {
-                    format!(
-                        "https://github.com/{}/pull/{}#pullrequestreview-{id}",
-                        inputs.full_name, inputs.number
-                    )
-                });
+                let review_url = review_id.map(|id| forge::current().review_url(&inputs.full_name, inputs.number, id));
                 if let Ok(result) = reserve_effective_review_result(
                     db,
                     &run,
@@ -731,7 +726,7 @@ pub(crate) fn handle_completed_review(
             }
             Ok(AutoPostReview::Superseded) => log_auto_post(inputs, "superseded by a new PR head"),
             Err(error) => {
-                let superseded = github::live_pr_state(&inputs.full_name, inputs.number)
+                let superseded = forge::live_pr_state(&inputs.full_name, inputs.number)
                     .is_ok_and(|live| live.state != "OPEN" || live.head_sha != run.head_sha);
                 if superseded {
                     log_auto_post(
@@ -1023,14 +1018,14 @@ pub(crate) fn auto_post_review(
         }
         posted_review_id = publish_review_with_recovery(
             || {
-                let snapshot = github::snapshot_review_requests(full_name, number)?;
+                let snapshot = forge::snapshot_review_requests(full_name, number)?;
                 db.prepare_review_request_restoration(run.id, &snapshot, post_marker.as_deref().unwrap_or_default())?;
-                let prepared = github::prepare_review(&payload)?;
+                let prepared = forge::prepare_review(&payload)?;
                 validate_live_review_scope(db, run.id, full_name, number, &run.head_sha, repo_path)?;
                 Ok(prepared)
             },
-            |prepared| github::post_review(full_name, number, prepared),
-            || github::find_review_id_by_marker(full_name, number, post_marker.as_deref().unwrap_or_default()),
+            |prepared| forge::post_review(full_name, number, prepared),
+            || forge::find_review_id_by_marker(full_name, number, post_marker.as_deref().unwrap_or_default()),
             || db.reset_review_posting(run.id),
         )?;
         if let Some(review_id) = posted_review_id {
@@ -1149,8 +1144,9 @@ fn plural(count: usize, word: &str) -> String {
 /// the counts and one table row per comment, so the PR page reads at a glance.
 pub(crate) fn posted_findings_review_body(full_name: &str, head_sha: &str, comments: &[serde_json::Value]) -> String {
     let reviewed = format!(
-        "Reviewed [`{}`](https://github.com/{full_name}/commit/{head_sha}).",
-        short_sha(head_sha)
+        "Reviewed [`{}`]({}).",
+        short_sha(head_sha),
+        forge::current().commit_url(full_name, head_sha)
     );
     if comments.is_empty() {
         return format!("### ⚠️ OpenCodeReview posted findings\n\n{reviewed} The details are in this review.");
@@ -1226,7 +1222,14 @@ pub(crate) fn build_review_payload(
         .unwrap_or_else(|| serde_json::json!([]));
     let inline = comments.as_array().map(Vec::as_slice).unwrap_or_default();
     let (body, generated) = if body.trim().is_empty() && !evidence_warnings.is_empty() && inline.is_empty() {
-        (format!("### ⚠️ OpenCodeReview finished with warnings\n\nReviewed [`{}`](https://github.com/{full_name}/commit/{head_sha}).", short_sha(head_sha)), true)
+        (
+            format!(
+                "### ⚠️ OpenCodeReview finished with warnings\n\nReviewed [`{}`]({}).",
+                short_sha(head_sha),
+                forge::current().commit_url(full_name, head_sha)
+            ),
+            true,
+        )
     } else if body.trim().is_empty() && matches!(event, "COMMENT" | "REQUEST_CHANGES") {
         (posted_findings_review_body(full_name, head_sha, inline), true)
     } else {
@@ -1258,7 +1261,7 @@ pub(crate) fn split_comments_for_post(
     if comments.is_empty() {
         return (serde_json::json!([]), String::new());
     }
-    let anchors = github::diff_anchors(full_name, number);
+    let anchors = forge::diff_anchors(full_name, number);
     if anchors.is_empty() {
         return (serde_json::Value::Array(comments), String::new());
     }
@@ -1320,7 +1323,7 @@ pub(crate) fn compose_review_post(
     include_selected_body: bool,
 ) -> ReviewPostDraft {
     let (valid_comments, relocated) = split_comments_for_post(full_name, number, run.comments_json.as_deref());
-    let dedupe = github::dedupe_review_comments(full_name, number, valid_comments);
+    let dedupe = forge::dedupe_review_comments(full_name, number, valid_comments);
     finish_review_post(run, event, include_selected_body, dedupe, &relocated)
 }
 
@@ -1353,7 +1356,7 @@ pub(crate) fn finish_review_post(
     run: &crate::db::ReviewRun,
     event: &str,
     include_selected_body: bool,
-    dedupe: github::DedupeResult,
+    dedupe: forge::DedupeResult,
     relocated: &str,
 ) -> ReviewPostDraft {
     let has_inline = dedupe

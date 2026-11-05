@@ -419,7 +419,7 @@ fn resolve_named_ref(
 // Monitoring subscriptions do not grant or deny supporting repository access.
 fn verify_repository_read_access(repository: &str, host: &str, cancel: &AtomicBool) -> Result<(), String> {
     verify_repository_read_access_using(repository, host, cancel, |args| {
-        crate::github::gh_capture_cancellable(args, cancel)
+        crate::forge::gh_capture_cancellable(args, cancel)
     })
 }
 
@@ -1024,7 +1024,7 @@ pub(crate) fn capture_with_recorded(
         &mut |repository, host, cancel| {
             verify_repository_read_access(repository, host, cancel)?;
             authorize_dependency_disclosure_using(&primary, &mut primary_public, repository, host, cancel, |args| {
-                crate::github::gh_capture_cancellable(args, cancel)
+                crate::forge::gh_capture_cancellable(args, cancel)
             })
         },
     )

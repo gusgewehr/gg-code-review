@@ -408,18 +408,18 @@ fn manually_cancelled_auto_review_stays_paused_until_head_changes() {
 
 #[test]
 fn changed_review_target_is_not_a_review_failure() {
-    let current = github::LivePrState {
+    let current = forge::LivePrState {
         state: "OPEN".to_string(),
         head_sha: "head".to_string(),
         base_ref: "main".to_string(),
         base_sha: "base".to_string(),
         merged_at: None,
     };
-    let changed = github::LivePrState {
+    let changed = forge::LivePrState {
         head_sha: "new-head".to_string(),
         ..current.clone()
     };
-    let merged = github::LivePrState {
+    let merged = forge::LivePrState {
         state: "MERGED".to_string(),
         ..current.clone()
     };
@@ -896,7 +896,7 @@ fn relocated_selected_findings_survive_comment_publication() {
             &run,
             "COMMENT",
             true,
-            github::DedupeResult {
+            forge::DedupeResult {
                 post_comments: serde_json::json!([]),
                 annotated_comments_json: "{\"comments\":[]}".into(),
                 suppressed_count: suppressed,
@@ -914,7 +914,7 @@ fn suggestions_post_with_the_review_but_never_on_their_own_after_duplicates() {
     let suggestions = crate::review::evidence::suggestions_section(&[serde_json::json!(
         {"path":"a.rs","line":3,"title":"Stale test name","detail":"Detail","action":"Rename it"}
     )]);
-    let dedupe = |comments: serde_json::Value, suppressed| github::DedupeResult {
+    let dedupe = |comments: serde_json::Value, suppressed| forge::DedupeResult {
         post_comments: comments,
         annotated_comments_json: "{\"comments\":[]}".into(),
         suppressed_count: suppressed,
@@ -1112,7 +1112,7 @@ fn review_publication_recovery_cases(snapshot_fails: bool, payload_fails: bool) 
                 } else {
                     root.clone()
                 };
-                github::PreparedReview::in_directory("{}", &directory)
+                forge::PreparedReview::in_directory("{}", &directory)
             },
             |_prepared| {
                 post_calls.set(post_calls.get() + 1);

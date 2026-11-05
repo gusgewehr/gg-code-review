@@ -178,7 +178,7 @@ pub(crate) fn reconcile_silent_review_result(
     // result reached GitHub; an older clean comment shares the ownership marker.
     let comment = match result.run_id {
         Some(run_id) => find_clean_comment(
-            &mut github::GitHubStatusComments,
+            &mut forge::GitHubStatusComments,
             full_name,
             number,
             &result.marker_key,
@@ -289,7 +289,7 @@ pub(crate) fn reconcile_interrupted_review_posts(db: &Database, repos_dir: &Path
             &post.head_sha,
             &installation_id,
         );
-        let review_id = match github::find_review_id_by_marker(&post.full_name, post.number, &marker) {
+        let review_id = match forge::find_review_id_by_marker(&post.full_name, post.number, &marker) {
             Ok(Some(review_id)) => review_id,
             Ok(None) => {
                 let _ = db.reset_review_posting(post.run_id);
@@ -331,10 +331,7 @@ pub(crate) fn reconcile_interrupted_review_posts(db: &Database, repos_dir: &Path
         };
         let has_findings = review_has_findings(run.comments_json.as_deref(), run.review_body.as_deref());
         let prior = db.review_result(post.pr_id).ok().flatten();
-        let review_url = format!(
-            "https://github.com/{}/pull/{}#pullrequestreview-{review_id}",
-            post.full_name, post.number
-        );
+        let review_url = forge::current().review_url(&post.full_name, post.number, review_id);
         let effective_state = if has_findings { "findings_posted" } else { "clean" };
         let Ok(result) = reserve_effective_review_result(
             db,
@@ -431,7 +428,7 @@ pub(crate) fn start_review_request_restoration(db_handle: Db) {
                 let restored = (|| {
                     let review_id = match job.review_id {
                         Some(id) => Some(id),
-                        None => github::find_review_id_by_marker(&job.full_name, job.number, &job.marker)?,
+                        None => forge::find_review_id_by_marker(&job.full_name, job.number, &job.marker)?,
                     };
                     let Some(review_id) = review_id else {
                         return Ok(true);
@@ -439,7 +436,7 @@ pub(crate) fn start_review_request_restoration(db_handle: Db) {
                     db_handle
                         .open()?
                         .accept_review_request_restoration(job.run_id, review_id)?;
-                    github::restore_review_requests(&job.full_name, job.number, review_id, &job.snapshot)
+                    forge::restore_review_requests(&job.full_name, job.number, review_id, &job.snapshot)
                 })();
                 let (status, error) = match restored {
                     Ok(true) => ("done", None),
