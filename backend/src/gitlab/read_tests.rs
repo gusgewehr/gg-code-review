@@ -135,7 +135,17 @@ mod fake {
 if [ "$n" -lt 3 ]; then echo "429 Too Many Requests" >&2; exit 1; fi
 echo '[1]'"#;
         let (dir, bin) = setup("429", body);
-        let out = api_at(&bin, "h", &dir, "projects?x=1", true, "projects", 0).unwrap();
+        let out = api_at(
+            &bin,
+            "h",
+            &dir,
+            "projects?x=1",
+            true,
+            "projects",
+            0,
+            &AtomicBool::new(false),
+        )
+        .unwrap();
         assert_eq!(String::from_utf8_lossy(&out).trim(), "[1]");
         let log = calls(&dir);
         assert_eq!(log.len(), 3);
@@ -146,7 +156,17 @@ echo '[1]'"#;
     #[test]
     fn exhausts_on_502_without_leaking() {
         let (dir, bin) = setup("502", r#"echo "502 Bad Gateway glpat-LEAKLEAKLEAK123" >&2; exit 1"#);
-        let err = api_at(&bin, "h", &dir, "projects", true, "projects", 0).unwrap_err();
+        let err = api_at(
+            &bin,
+            "h",
+            &dir,
+            "projects",
+            true,
+            "projects",
+            0,
+            &AtomicBool::new(false),
+        )
+        .unwrap_err();
         assert_eq!(
             err,
             "Could not load projects from h. Check the connection and refresh repository access."
@@ -159,7 +179,7 @@ echo '[1]'"#;
     #[test]
     fn unauthorized_is_not_retried() {
         let (dir, bin) = setup("401", r#"echo "401 Unauthorized" >&2; exit 1"#);
-        let err = api_at(&bin, "h", &dir, "user", false, "user", 0).unwrap_err();
+        let err = api_at(&bin, "h", &dir, "user", false, "user", 0, &AtomicBool::new(false)).unwrap_err();
         assert_eq!(
             err,
             "GitLab rejected the stored token. Reconnect in GitLab connection with a new personal access token."
@@ -193,6 +213,23 @@ esac"#;
         assert_eq!((m.state.as_str(), m.base_sha.as_str()), ("MERGED", ""));
         assert!(m.merged_at.is_some());
         assert_eq!(calls(&dir).len(), before + 1);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn cancel_kills_a_running_call() {
+        let (dir, bin) = setup("cancel", "sleep 30");
+        let cancel = AtomicBool::new(false);
+        let started = std::time::Instant::now();
+        let err = std::thread::scope(|s| {
+            s.spawn(|| {
+                std::thread::sleep(std::time::Duration::from_millis(200));
+                cancel.store(true, std::sync::atomic::Ordering::SeqCst);
+            });
+            api_at(&bin, "h", &dir, "user", false, "user", 0, &cancel).unwrap_err()
+        });
+        assert_eq!(err, "cancelled");
+        assert!(started.elapsed() < std::time::Duration::from_secs(10));
         let _ = std::fs::remove_dir_all(&dir);
     }
 

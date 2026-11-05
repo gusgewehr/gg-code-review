@@ -1,8 +1,9 @@
 //! `glab api` runner: bounded retry, tolerant pagination, fixed error strings (no payload or stderr text).
 
-use super::auth::{classify, config_dir, glab_read, redact, run_glab, text_of};
+use super::auth::{classify, config_dir, glab_read, redact, run_glab_cancellable, text_of};
 use serde::de::DeserializeOwned;
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 const TOKEN_MESSAGE: &str =
@@ -38,6 +39,7 @@ fn retryable(stderr: &str) -> bool {
         .any(|t| matches!(t, "429" | "500" | "502" | "503" | "504"))
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(super) fn api_at(
     bin: &Path,
     host: &str,
@@ -46,6 +48,7 @@ pub(super) fn api_at(
     paginate: bool,
     what: &str,
     backoff_ms: u64,
+    cancel: &AtomicBool,
 ) -> Result<Vec<u8>, String> {
     let args: Vec<&str> = if paginate {
         vec!["api", "--paginate", endpoint]
@@ -55,7 +58,15 @@ pub(super) fn api_at(
     let generic = format!("Could not load {what} from {host}. Check the connection and refresh repository access.");
     let mut attempt = 0u32;
     loop {
-        let out = run_glab(bin, host, dir, &args, None, Duration::from_secs(120)).map_err(|_| generic.clone())?;
+        if cancel.load(Ordering::SeqCst) {
+            return Err("cancelled".into());
+        }
+        // Read lock per attempt so a login/logout never waits out the retry backoff.
+        let out = {
+            let _guard = glab_read();
+            run_glab_cancellable(bin, host, dir, &args, None, Duration::from_secs(120), cancel)
+        }
+        .map_err(|e| if e == "cancelled" { e } else { generic.clone() })?;
         if out.status.success() {
             return Ok(out.stdout);
         }
@@ -75,7 +86,6 @@ pub(super) fn api_at(
 }
 
 pub(super) fn api(endpoint: &str, paginate: bool, what: &str) -> Result<Vec<u8>, String> {
-    let _guard = glab_read();
     api_at(
         Path::new("glab"),
         &crate::forge::host(),
@@ -84,5 +94,6 @@ pub(super) fn api(endpoint: &str, paginate: bool, what: &str) -> Result<Vec<u8>,
         paginate,
         what,
         1000,
+        &AtomicBool::new(false),
     )
 }

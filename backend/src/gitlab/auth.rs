@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output, Stdio};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
 #[derive(Serialize, Debug)]
@@ -191,6 +192,18 @@ pub(super) fn run_glab(
     stdin: Option<&str>,
     timeout: Duration,
 ) -> Result<Output, String> {
+    run_glab_cancellable(bin, host, dir, args, stdin, timeout, &AtomicBool::new(false))
+}
+
+pub(super) fn run_glab_cancellable(
+    bin: &Path,
+    host: &str,
+    dir: &Path,
+    args: &[&str],
+    stdin: Option<&str>,
+    timeout: Duration,
+    cancel: &AtomicBool,
+) -> Result<Output, String> {
     let mut cmd = Command::new(bin);
     cmd.args(args)
         .stdin(Stdio::piped())
@@ -223,6 +236,11 @@ pub(super) fn run_glab(
                 let _ = child.kill();
                 let _ = child.wait();
                 return Err("glab timed out".into());
+            }
+            Ok(None) if cancel.load(Ordering::SeqCst) => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return Err("cancelled".into());
             }
             Ok(None) => std::thread::sleep(Duration::from_millis(25)),
             Err(_) => return Err("glab failed".into()),

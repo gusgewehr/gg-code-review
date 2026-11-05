@@ -1,7 +1,7 @@
 //! Merge requests mapped onto the GitHub pull-request types the rest of the server uses.
 
 use super::api::{api, api_at, enc, parse_pages, UNEXPECTED};
-use super::auth::{config_dir, glab_read};
+use super::auth::config_dir;
 use crate::github::{GhPrAuthor, GhPrPrincipal, GhPullRequest, LivePrState};
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -90,8 +90,15 @@ fn mr_endpoint(full_name: &str, number: i64) -> String {
     format!("projects/{}/merge_requests/{number}", enc(full_name))
 }
 
-fn get_mr(bin: &Path, host: &str, dir: &Path, endpoint: &str, backoff_ms: u64) -> Result<GlMr, String> {
-    let bytes = api_at(bin, host, dir, endpoint, false, "merge requests", backoff_ms)?;
+fn get_mr(
+    bin: &Path,
+    host: &str,
+    dir: &Path,
+    endpoint: &str,
+    backoff_ms: u64,
+    cancel: &AtomicBool,
+) -> Result<GlMr, String> {
+    let bytes = api_at(bin, host, dir, endpoint, false, "merge requests", backoff_ms, cancel)?;
     serde_json::from_slice(&bytes).map_err(|_| UNEXPECTED.to_string())
 }
 
@@ -102,9 +109,10 @@ fn branch_tip_at(
     full_name: &str,
     branch: &str,
     backoff_ms: u64,
+    cancel: &AtomicBool,
 ) -> Result<String, String> {
     let endpoint = format!("projects/{}/repository/branches/{}", enc(full_name), enc(branch));
-    let bytes = api_at(bin, host, dir, &endpoint, false, "merge requests", backoff_ms)?;
+    let bytes = api_at(bin, host, dir, &endpoint, false, "merge requests", backoff_ms, cancel)?;
     let json: serde_json::Value = serde_json::from_slice(&bytes).map_err(|_| UNEXPECTED.to_string())?;
     json["commit"]["id"]
         .as_str()
@@ -125,14 +133,14 @@ pub(super) fn live_state_at(
     if cancelled() {
         return Err("cancelled".into());
     }
-    let mr = get_mr(bin, host, dir, &mr_endpoint(full_name, number), backoff_ms)?;
+    let mr = get_mr(bin, host, dir, &mr_endpoint(full_name, number), backoff_ms, cancel)?;
     let state = map_state(mr.state.as_deref().unwrap_or_default());
     let head_sha = mr.sha.filter(|s| !s.is_empty()).ok_or_else(|| UNEXPECTED.to_string())?;
     let base_sha = if state == "OPEN" {
         if cancelled() {
             return Err("cancelled".into());
         }
-        branch_tip_at(bin, host, dir, full_name, &mr.target_branch, backoff_ms)?
+        branch_tip_at(bin, host, dir, full_name, &mr.target_branch, backoff_ms, cancel)?
     } else {
         String::new()
     };
@@ -153,13 +161,23 @@ pub(super) fn list_open_at(
     backoff_ms: u64,
 ) -> Result<Vec<GhPullRequest>, String> {
     let endpoint = format!("projects/{}/merge_requests?state=opened&per_page=100", enc(full_name));
-    let mut prs = parse_open_mrs(&api_at(bin, host, dir, &endpoint, true, "merge requests", backoff_ms)?)?;
+    let no = AtomicBool::new(false);
+    let mut prs = parse_open_mrs(&api_at(
+        bin,
+        host,
+        dir,
+        &endpoint,
+        true,
+        "merge requests",
+        backoff_ms,
+        &no,
+    )?)?;
     // The MR list has no base SHA; the live target tip lets polling detect base moves and retargets.
     let mut tips: HashMap<String, String> = HashMap::new();
     for pr in &mut prs {
         let branch = pr.base_ref_name.clone().unwrap_or_default();
         if !tips.contains_key(&branch) {
-            let tip = branch_tip_at(bin, host, dir, full_name, &branch, backoff_ms)?;
+            let tip = branch_tip_at(bin, host, dir, full_name, &branch, backoff_ms, &no)?;
             tips.insert(branch.clone(), tip);
         }
         pr.base_ref_oid = tips.get(&branch).cloned();
@@ -168,7 +186,6 @@ pub(super) fn list_open_at(
 }
 
 pub(crate) fn list_open_prs(full_name: &str) -> Result<Vec<GhPullRequest>, String> {
-    let _guard = glab_read();
     list_open_at(Path::new("glab"), &crate::forge::host(), &config_dir(), full_name, 1000)
 }
 
@@ -193,7 +210,6 @@ pub(crate) fn live_pr_state_cancellable(
     number: i64,
     cancel: &AtomicBool,
 ) -> Result<LivePrState, String> {
-    let _guard = glab_read();
     live_state_at(
         Path::new("glab"),
         &crate::forge::host(),
@@ -210,13 +226,13 @@ pub(super) fn description_from(mr: GlMr) -> (String, String) {
 }
 
 pub(crate) fn pr_description(full_name: &str, number: i64) -> Result<(String, String), String> {
-    let _guard = glab_read();
     get_mr(
         Path::new("glab"),
         &crate::forge::host(),
         &config_dir(),
         &mr_endpoint(full_name, number),
         1000,
+        &AtomicBool::new(false),
     )
     .map(description_from)
 }
