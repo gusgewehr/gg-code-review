@@ -23,7 +23,10 @@ Cinco fases, na ordem de risco: primeiro a camada de provider sem mudar o compor
   2. Os smokes existentes (`docker/runner-smoke.py` e demais scripts de Docker) passam sem mudanças
   3. Um PR do GitHub é revisado e publicado com corpos de comentário e URLs idênticos aos de antes da refatoração
   4. Nenhum arquivo fora de `backend/src/github/` e da camada de provider chama `github::` diretamente
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 01-01-PLAN.md — forge seam (re-export + enum Forge { GitHub }), github:: -> forge:: rewrite, URL/refspec via Forge methods
 
 ### Phase 2: Conexão com o GitLab self-hosted
 **Goal**: O admin escolhe GitLab como provider do deploy e conecta à instância interna (CA própria) colando um PAT, sem expor o token
