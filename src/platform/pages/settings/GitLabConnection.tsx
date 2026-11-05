@@ -30,7 +30,7 @@ export function GitLabConnection({ status }: { status: ForgeStatus }) {
     }
   }
 
-  const error = connectError ?? status.error?.message;
+  const error = connectError ?? (disconnect.error ? formatError(disconnect.error) : status.error?.message);
   const row = "flex items-center justify-between gap-4 text-sm";
   return (
     <div className="grid gap-3 rounded-lg border border-line bg-[color-mix(in_srgb,var(--surface-2)_70%,transparent)] p-4">

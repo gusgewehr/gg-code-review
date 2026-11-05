@@ -398,7 +398,7 @@ export function SettingsPage() {
           {(reviewSettingsQuery.error || statusQuery.error || reposQuery.error) && (
             <DSError>{formatError(reviewSettingsQuery.error ?? statusQuery.error ?? reposQuery.error)}</DSError>
           )}
-          {authDisconnected && !gitlabForge && activeSection !== "integrations" && (
+          {authDisconnected && !gitlabForge && !forgeQuery.isPending && activeSection !== "integrations" && (
             <GitHubAuthRecovery
               prompt={authPrompt}
               doneMessage={authDone?.message}
