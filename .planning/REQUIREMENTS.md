@@ -37,13 +37,13 @@ Escopo da v1: dar acesso ao GitLab com paridade exata ao fluxo GitHub atual. Nad
 
 ### Publicação (PUB)
 
-- [ ] **PUB-01**: Findings validados são postados como discussões inline no diff do MR, na linha correta (adicionada, removida ou de contexto)
-- [ ] **PUB-02**: Finding cuja posição o GitLab rejeita vira nota geral com o mesmo marcador, sem perder o finding
+- [x] **PUB-01**: Findings validados são postados como discussões inline no diff do MR, na linha correta (adicionada, removida ou de contexto)
+- [x] **PUB-02**: Finding cuja posição o GitLab rejeita vira nota geral com o mesmo marcador, sem perder o finding
 - [ ] **PUB-03**: A nota de status no MR é criada uma vez e editada no lugar a cada etapa
 - [ ] **PUB-04**: O resumo da revisão é postado como nota, com a seção de sugestões quando Post suggestions está ligado
 - [ ] **PUB-05**: Republicar ou repetir após falha parcial não duplica comentários (marcadores `<!-- ocr-... -->`)
 - [ ] **PUB-06**: Se o MR recebeu push depois da revisão, a publicação é abortada em vez de postar em posições desatualizadas
-- [ ] **PUB-07**: Texto do modelo não dispara quick actions (`/merge`, `/approve`), menções ou auto-links no GitLab
+- [x] **PUB-07**: Texto do modelo não dispara quick actions (`/merge`, `/approve`), menções ou auto-links no GitLab
 
 ### Indexação (IDX)
 
