@@ -231,13 +231,20 @@ pub(crate) fn upsert_issue_comment_by_marker(
     upsert_issue_comment_by_marker_at(&Ctx::live(), full_name, number, marker, body)
 }
 
-/// Empty on a listing error, like the GitHub counterpart.
-pub(super) fn existing_ocr_comments(ctx: &Ctx, full_name: &str, number: i64) -> Vec<ExistingOcrComment> {
+/// Empty on a listing error, like the GitHub counterpart. Notes tagged `own` (this run's earlier, partial
+/// publication) are left out: they are not duplicates from another run and must stay in the summary.
+pub(super) fn existing_ocr_comments(
+    ctx: &Ctx,
+    full_name: &str,
+    number: i64,
+    own: Option<&str>,
+) -> Vec<ExistingOcrComment> {
     let Ok(notes) = list_notes(ctx, full_name, number) else {
         return Vec::new();
     };
     notes
         .into_iter()
+        .filter(|n| own.is_none_or(|own| !n.body.contains(own)))
         .filter_map(|n| {
             let pos = n.position.as_ref();
             let path = pos.and_then(|p| p.new_path.clone().or_else(|| p.old_path.clone()));
@@ -253,6 +260,16 @@ pub(super) fn existing_ocr_comments(ctx: &Ctx, full_name: &str, number: i64) -> 
         .collect()
 }
 
-pub(crate) fn dedupe_review_comments(full_name: &str, number: i64, comments: Value) -> crate::github::DedupeResult {
-    crate::github::dedupe_against(&existing_ocr_comments(&Ctx::live(), full_name, number), comments)
+pub(crate) fn dedupe_review_comments(
+    full_name: &str,
+    number: i64,
+    comments: Value,
+    run_id: i64,
+    head_sha: &str,
+) -> crate::github::DedupeResult {
+    let own = super::publish::review_part_marker(&run_id.to_string(), head_sha);
+    crate::github::dedupe_against(
+        &existing_ocr_comments(&Ctx::live(), full_name, number, Some(&own)),
+        comments,
+    )
 }

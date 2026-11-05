@@ -14,6 +14,11 @@ const CHANGED: &str = "The merge request changed after the review (new push or c
 const PENDING: &str =
     "GitLab has not finished processing the latest push for this merge request; publication will be retried.";
 
+/// Tags every inline note of one run, so a retry after a partial publication can tell its own notes apart.
+pub(crate) fn review_part_marker(run_id: &str, head_sha: &str) -> String {
+    format!("<!-- ocr-review-part:v1 run={run_id} head={head_sha} -->")
+}
+
 fn mr_path(full_name: &str, number: i64) -> String {
     super::mrs::mr_endpoint(full_name, number)
 }
@@ -95,6 +100,9 @@ pub(super) fn post_review_at(
 
     let summary = payload["body"].as_str().unwrap_or_default();
     let marker = summary.lines().rev().find(|l| l.starts_with(SUMMARY_MARKER));
+    let part = marker
+        .and_then(|m| m.split_whitespace().find_map(|t| t.strip_prefix("run=")))
+        .map(|run| review_part_marker(run, commit_id));
     let notes = list_notes(ctx, full_name, number)?;
     let mut seen: HashSet<String> = notes.iter().filter_map(|n| extract_ocr_fingerprint(&n.body)).collect();
     let existing_summary = marker.and_then(|m| notes.iter().find(|n| n.body.contains(m)).map(|n| n.id));
@@ -105,6 +113,10 @@ pub(super) fn post_review_at(
             return Err("cancelled".into());
         }
         let body = comment["body"].as_str().unwrap_or_default();
+        let body = part
+            .as_ref()
+            .map_or_else(|| body.to_string(), |part| format!("{body}\n\n{part}"));
+        let body = body.as_str();
         if let Some(fp) = extract_ocr_fingerprint(body) {
             if !seen.insert(fp) {
                 continue;

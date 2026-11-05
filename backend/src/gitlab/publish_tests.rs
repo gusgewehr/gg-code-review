@@ -1,7 +1,7 @@
 //! Fake-glab tests for the GitLab notes layer and the publisher (PUB-01..07).
 
 use super::notes::*;
-use super::publish::post_review_at;
+use super::publish::{post_review_at, review_part_marker};
 use super::test_fake::{bodies, calls, setup};
 use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
@@ -341,9 +341,40 @@ fn existing_diffnote_suppresses_same_fingerprint() {
             "position": {"old_path": "a.rs", "new_path": "a.rs", "old_line": null, "new_line": 2}}]}])
         .to_string(),
     );
-    let existing = existing_ocr_comments(&ctx, "g/p", 7);
+    let existing = existing_ocr_comments(&ctx, "g/p", 7, None);
     assert_eq!(existing.len(), 1);
     let res = crate::github::dedupe_against(&existing, json!([comment(1, "a.rs", 2, "RIGHT")]));
     assert_eq!(res.suppressed_count, 1);
+    cleanup(&dir);
+}
+
+#[test]
+fn partial_publication_retry_keeps_own_findings_and_posts_the_summary() {
+    let (dir, ctx) = fixture("p-own", "");
+    let own = review_part_marker("1", HEAD);
+    let note = |n: u8, tag: &str| {
+        let body = format!("{}\nOpenCodeReview\n\n**[Finding] t{n}**\n\nDetail {n}{tag}", fp(n));
+        json!({"id": n, "body": body, "author": {"id": 1, "username": "bot"}})
+    };
+    // This run posted finding 1 before failing; another run already posted finding 3.
+    let notes = json!([{"notes": [note(1, &format!("\n\n{own}")), note(3, "")]}]);
+    put(&dir, "disc.json", &notes.to_string());
+    let existing = existing_ocr_comments(&ctx, "g/p", 7, Some(&own));
+    let all = json!([
+        comment(1, "a.rs", 2, "RIGHT"),
+        comment(2, "a.rs", 2, "LEFT"),
+        comment(3, "a.rs", 1, "RIGHT")
+    ]);
+    let res = crate::github::dedupe_against(&existing, all);
+    assert_eq!(res.suppressed_count, 1);
+    let post = res.post_comments.as_array().unwrap().clone();
+    assert_eq!(post.len(), 2);
+    assert_eq!(run(&ctx, &payload(post)), Ok(Some(900)));
+    let w = writes(&dir);
+    assert_eq!(w.len(), 2);
+    assert!(w[0].ends_with("/discussions") && w[1].ends_with("/notes"));
+    let b = bodies(&dir);
+    assert!(b[0]["body"].as_str().unwrap().contains(&own));
+    assert!(b[0]["body"].as_str().unwrap().contains("Detail 2"));
     cleanup(&dir);
 }

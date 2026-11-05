@@ -1323,7 +1323,7 @@ pub(crate) fn compose_review_post(
     include_selected_body: bool,
 ) -> ReviewPostDraft {
     let (valid_comments, relocated) = split_comments_for_post(full_name, number, run.comments_json.as_deref());
-    let dedupe = forge::dedupe_review_comments(full_name, number, valid_comments);
+    let dedupe = forge::dedupe_review_comments(full_name, number, valid_comments, run.id, &run.head_sha);
     finish_review_post(run, event, include_selected_body, dedupe, &relocated)
 }
 

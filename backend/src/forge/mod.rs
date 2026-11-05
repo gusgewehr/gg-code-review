@@ -196,10 +196,12 @@ pub(crate) fn dedupe_review_comments(
     full_name: &str,
     number: i64,
     comments: serde_json::Value,
+    run_id: i64,
+    head_sha: &str,
 ) -> crate::github::DedupeResult {
     match current() {
         Forge::GitHub => crate::github::dedupe_review_comments(full_name, number, comments),
-        Forge::GitLab => crate::gitlab::dedupe_review_comments(full_name, number, comments),
+        Forge::GitLab => crate::gitlab::dedupe_review_comments(full_name, number, comments, run_id, head_sha),
     }
 }
 
