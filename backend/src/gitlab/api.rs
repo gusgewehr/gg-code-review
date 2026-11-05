@@ -6,7 +6,7 @@ use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
-const TOKEN_MESSAGE: &str =
+pub(super) const TOKEN_MESSAGE: &str =
     "GitLab rejected the stored token. Reconnect in GitLab connection with a new personal access token.";
 pub(super) const UNEXPECTED: &str = "Unexpected GitLab response.";
 

@@ -78,7 +78,7 @@ impl Database {
          state = excluded.state,
          is_draft = excluded.is_draft,
          head_sha = excluded.head_sha,
-         base_sha = excluded.base_sha,
+         base_sha = COALESCE(excluded.base_sha, pull_requests.base_sha),
          base_ref = excluded.base_ref,
          head_ref = excluded.head_ref,
          default_branch = excluded.default_branch,

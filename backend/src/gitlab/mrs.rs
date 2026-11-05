@@ -1,6 +1,6 @@
 //! Merge requests mapped onto the GitHub pull-request types the rest of the server uses.
 
-use super::api::{api, api_at, enc, parse_pages, UNEXPECTED};
+use super::api::{api, api_at, enc, parse_pages, TOKEN_MESSAGE, UNEXPECTED};
 use super::auth::config_dir;
 use crate::github::{GhPrAuthor, GhPrPrincipal, GhPullRequest, LivePrState};
 use serde::Deserialize;
@@ -112,7 +112,7 @@ fn branch_tip_at(
     cancel: &AtomicBool,
 ) -> Result<String, String> {
     let endpoint = format!("projects/{}/repository/branches/{}", enc(full_name), enc(branch));
-    let bytes = api_at(bin, host, dir, &endpoint, false, "merge requests", backoff_ms, cancel)?;
+    let bytes = api_at(bin, host, dir, &endpoint, false, "branches", backoff_ms, cancel)?;
     let json: serde_json::Value = serde_json::from_slice(&bytes).map_err(|_| UNEXPECTED.to_string())?;
     json["commit"]["id"]
         .as_str()
@@ -173,14 +173,19 @@ pub(super) fn list_open_at(
         &no,
     )?)?;
     // The MR list has no base SHA; the live target tip lets polling detect base moves and retargets.
-    let mut tips: HashMap<String, String> = HashMap::new();
+    let mut tips: HashMap<String, Option<String>> = HashMap::new();
     for pr in &mut prs {
         let branch = pr.base_ref_name.clone().unwrap_or_default();
         if !tips.contains_key(&branch) {
-            let tip = branch_tip_at(bin, host, dir, full_name, &branch, backoff_ms, &no)?;
+            let tip = match branch_tip_at(bin, host, dir, full_name, &branch, backoff_ms, &no) {
+                Ok(tip) => Some(tip),
+                Err(e) if e == TOKEN_MESSAGE => return Err(e),
+                // A deleted target must not stop the project's polling; the upsert keeps the stored base.
+                Err(_) => None,
+            };
             tips.insert(branch.clone(), tip);
         }
-        pr.base_ref_oid = tips.get(&branch).cloned();
+        pr.base_ref_oid = tips.get(&branch).cloned().flatten();
     }
     Ok(prs)
 }

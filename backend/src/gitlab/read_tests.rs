@@ -248,6 +248,25 @@ esac"#;
         assert_eq!(calls(&dir).len(), 3);
         let _ = std::fs::remove_dir_all(&dir);
     }
+
+    #[test]
+    fn open_list_survives_a_missing_target_branch() {
+        let list = r#""api --paginate projects/g%2Fp/merge_requests?state=opened&per_page=100") echo '[{"iid":1,"title":"a","author":{"username":"u"},"sha":"h1","target_branch":"gone"},{"iid":2,"title":"b","author":{"username":"u"},"sha":"h2","target_branch":"main"}]';;"#;
+        let body = format!(
+            "case \"$*\" in\n{list}\n\"api projects/g%2Fp/repository/branches/main\") echo '{{\"commit\":{{\"id\":\"mainsha\"}}}}';;\n*) echo \"404 Not Found\" >&2; exit 1;;\nesac"
+        );
+        let (dir, bin) = setup("open-gone", &body);
+        let prs = list_open_at(&bin, "h", &dir, "g/p", 0).unwrap();
+        let bases: Vec<_> = prs.iter().map(|p| (p.number, p.base_ref_oid.as_deref())).collect();
+        assert_eq!(bases, [(1, None), (2, Some("mainsha"))]);
+        let _ = std::fs::remove_dir_all(&dir);
+
+        let body = format!("case \"$*\" in\n{list}\n*) echo \"401 Unauthorized\" >&2; exit 1;;\nesac");
+        let (dir, bin) = setup("open-401", &body);
+        let err = list_open_at(&bin, "h", &dir, "g/p", 0).unwrap_err();
+        assert!(err.starts_with("GitLab rejected the stored token"), "{err}");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 }
 
 #[cfg(test)]
