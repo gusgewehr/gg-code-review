@@ -49,7 +49,10 @@ pub(super) fn apply_at(cmd: &mut Command, host: &str, token: &str) {
 /// Read per call so a Reconnect in Settings takes effect without restart.
 pub(crate) fn apply_git_auth(cmd: &mut Command) {
     let host = crate::forge::host();
-    let text = std::fs::read_to_string(super::auth::config_dir().join("config.yml")).unwrap_or_default();
+    let text = {
+        let _guard = super::auth::glab_read();
+        std::fs::read_to_string(super::auth::config_dir().join("config.yml")).unwrap_or_default()
+    };
     match token_from_config_text(&text, &host) {
         Some(token) => apply_at(cmd, &host, &token),
         None => {
