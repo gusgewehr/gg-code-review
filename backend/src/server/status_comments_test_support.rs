@@ -9,6 +9,8 @@ pub(crate) struct FakeStatusComments {
     pub(crate) comments: Vec<StatusComment>,
     pub(crate) posts: usize,
     pub(crate) deletes: usize,
+    pub(crate) edits: usize,
+    pub(crate) edit_supported: bool,
     pub(crate) post_writes_then_fails: bool,
     pub(crate) fail_post: bool,
     pub(crate) fail_delete: bool,
@@ -22,6 +24,8 @@ impl FakeStatusComments {
             comments: Vec::new(),
             posts: 0,
             deletes: 0,
+            edits: 0,
+            edit_supported: false,
             post_writes_then_fails: false,
             fail_post: false,
             fail_delete: false,
@@ -73,7 +77,18 @@ impl StatusCommentApi for FakeStatusComments {
         Ok(id)
     }
 
-    fn delete(&mut self, _repo: &str, id: i64) -> Result<(), String> {
+    fn edit(&mut self, _repo: &str, _number: i64, id: i64, body: &str) -> Result<bool, String> {
+        self.edits += 1;
+        if !self.edit_supported {
+            return Ok(false);
+        }
+        if let Some(comment) = self.comments.iter_mut().find(|comment| comment.id == id) {
+            comment.body = body.to_string();
+        }
+        Ok(true)
+    }
+
+    fn delete(&mut self, _repo: &str, _number: i64, id: i64) -> Result<(), String> {
         self.deletes += 1;
         if self.fail_delete {
             return Err("delete failed".to_string());

@@ -11,7 +11,12 @@ pub(crate) trait StatusCommentApi {
     fn publisher_id(&mut self) -> Result<i64, String>;
     fn list(&mut self, repo: &str, number: i64) -> Result<Vec<StatusComment>, String>;
     fn post(&mut self, repo: &str, number: i64, body: &str) -> Result<i64, String>;
-    fn delete(&mut self, repo: &str, id: i64) -> Result<(), String>;
+    /// Edits a note in place. `Ok(false)` means this forge cannot edit, so the
+    /// caller posts a new comment instead.
+    fn edit(&mut self, _repo: &str, _number: i64, _id: i64, _body: &str) -> Result<bool, String> {
+        Ok(false)
+    }
+    fn delete(&mut self, repo: &str, number: i64, id: i64) -> Result<(), String>;
 }
 
 pub(crate) struct GitHubStatusComments;
@@ -87,7 +92,7 @@ impl StatusCommentApi for GitHubStatusComments {
             .ok_or_else(|| "GitHub did not return issue comment id".to_string())
     }
 
-    fn delete(&mut self, repo: &str, id: i64) -> Result<(), String> {
+    fn delete(&mut self, repo: &str, _number: i64, id: i64) -> Result<(), String> {
         match transport::gh_capture(&[
             "api",
             "--method",

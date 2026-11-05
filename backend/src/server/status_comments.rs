@@ -72,6 +72,7 @@ pub(crate) fn find_owned_comment(
         .min())
 }
 
+/// An editable API keeps the oldest replaceable comment instead of posting.
 /// Adopts the lowest-id comment already posted for this generation instead of
 /// posting again, so a retry after a lost POST response cannot duplicate. Then
 /// deletes the family's remaining legacy and same-or-older generation comments;
@@ -94,11 +95,21 @@ pub(crate) fn replace_owned_comment(
         .min();
     let kept = match adopted {
         Some(id) => id,
-        None => api.post(repo, number, body)?,
+        None => {
+            let replaceable = owned
+                .iter()
+                .filter(|(_, run)| run.map(|run| run <= generation).unwrap_or(true))
+                .map(|(id, _)| *id)
+                .min();
+            match replaceable {
+                Some(id) if api.edit(repo, number, id, body)? => id,
+                _ => api.post(repo, number, body)?,
+            }
+        }
     };
     for (id, run) in owned {
         if id != kept && run.map(|run| run <= generation).unwrap_or(true) {
-            api.delete(repo, id)?;
+            api.delete(repo, number, id)?;
         }
     }
     Ok(kept)
@@ -115,7 +126,7 @@ pub(crate) fn delete_owned_comments_before(
 ) -> Result<(), String> {
     for (id, run) in owned_comment_generations(api, repo, number, classify)? {
         if run.map(|run| run < generation).unwrap_or(true) {
-            api.delete(repo, id)?;
+            api.delete(repo, number, id)?;
         }
     }
     Ok(())

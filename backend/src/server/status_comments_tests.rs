@@ -189,3 +189,37 @@ fn owned_clean_comment_run_rejects_non_family_bodies() {
     assert_eq!(owned_clean_comment_run(&stray_third_line, MARKER), None);
     assert_eq!(owned_clean_comment_run("just a comment", MARKER), None);
 }
+
+#[test]
+fn replace_owned_comment_edits_in_place_across_generations() {
+    let mut api = FakeStatusComments::new();
+    api.edit_supported = true;
+    let first = replace_clean_comment(&mut api, "owner/repo", 7, MARKER, 1, &clean_body(Some(1))).unwrap();
+    let body = clean_body(Some(2));
+    let second = replace_clean_comment(&mut api, "owner/repo", 7, MARKER, 2, &body).unwrap();
+    assert_eq!(first, second);
+    assert_eq!((api.posts, api.edits, api.deletes), (1, 1, 0));
+    assert_eq!(api.comments[0].body, body);
+}
+
+#[test]
+fn replace_owned_comment_edits_in_place_keeps_lowest_and_deletes_rest() {
+    let mut api = FakeStatusComments::new();
+    api.edit_supported = true;
+    let low = api.own(&clean_body(Some(1)));
+    api.own(&clean_body(Some(2)));
+    let id = replace_clean_comment(&mut api, "owner/repo", 7, MARKER, 5, &clean_body(Some(5))).unwrap();
+    assert_eq!(id, low);
+    assert_eq!((api.posts, api.edits, api.deletes), (0, 1, 1));
+    assert_eq!(api.ids(), vec![low]);
+}
+
+#[test]
+fn replace_owned_comment_edits_in_place_skips_same_generation() {
+    let mut api = FakeStatusComments::new();
+    api.edit_supported = true;
+    let id = api.own(&clean_body(Some(3)));
+    let kept = replace_clean_comment(&mut api, "owner/repo", 7, MARKER, 3, &clean_body(Some(3))).unwrap();
+    assert_eq!(kept, id);
+    assert_eq!((api.posts, api.edits, api.deletes), (0, 0, 0));
+}
