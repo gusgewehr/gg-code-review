@@ -8,7 +8,8 @@ Cinco fases, na ordem de risco: primeiro a camada de provider sem mudar o compor
 
 - [x] **Phase 1: Camada de provider (Forge) sem mudança de comportamento** - Refatora o acesso ao GitHub atrás de uma interface, sem alterar nada no fluxo atual (completed 2026-11-05)
 - [x] **Phase 2: Conexão com o GitLab self-hosted** - Seleção de provider por deploy, `glab` fixo na imagem do server, CA interna e login por PAT na UI (completed 2026-11-05)
-- [x] **Phase 3: Leitura GitLab: descoberta e preparação de MRs** - Lista projetos, descobre MRs por polling e prepara a revisão com refs vivos (completed 2026-11-05)
+- [x] **Phase 3: Leitura GitLab: descoberta e preparação de MRs** - Lista projetos, descobre MRs por polling e prepara a revisão com refs vivos
+ (completed 2026-11-05)
 - [x] **Phase 4: Escrita GitLab: publicação dos resultados** - Findings inline, nota de status, resumo, idempotência e segurança do texto (completed 2026-11-05)
 - [ ] **Phase 5: Indexação, skills, UI e documentação** - Paridade final: indexação, skills, termos do GitLab na UI, docs e release note
 
@@ -133,7 +134,12 @@ Plans:
   3. Num deploy GitLab a UI diz "merge request" e `!iid`, e os links abrem a instância GitLab
   4. Existe documentação de como configurar um deploy GitLab (host, CA, login) e uma release note em `changelog.d/`
 
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — Backend: remove GitLab reindex gate, clone_url helper + test, IDX-02 proof, GitLab sign-in copy
+- [ ] 05-02-PLAN.md — Frontend: forgeTerms/useForgeTerms and MR/!iid/GitLab vocabulary across reviews, usage, settings
+- [ ] 05-03-PLAN.md — docs/gitlab.md, README pointer, release note in changelog.d
 **UI hint**: yes
 
 ## Tabela de progresso
