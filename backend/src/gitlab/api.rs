@@ -56,6 +56,8 @@ pub(super) fn api_at(
         vec!["api", endpoint]
     };
     let generic = format!("Could not load {what} from {host}. Check the connection and refresh repository access.");
+    // A full paginated listing on a large instance can take minutes; a timeout is never retried.
+    let timeout = Duration::from_secs(if paginate { 600 } else { 120 });
     let mut attempt = 0u32;
     loop {
         if cancel.load(Ordering::SeqCst) {
@@ -64,7 +66,7 @@ pub(super) fn api_at(
         // Read lock per attempt so a login/logout never waits out the retry backoff.
         let out = {
             let _guard = glab_read();
-            run_glab_cancellable(bin, host, dir, &args, None, Duration::from_secs(120), cancel)
+            run_glab_cancellable(bin, host, dir, &args, None, timeout, cancel)
         }
         .map_err(|e| if e == "cancelled" { e } else { generic.clone() })?;
         if out.status.success() {
