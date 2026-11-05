@@ -1,4 +1,4 @@
-import { ChevronDown, RotateCcw } from "lucide-react";
+import { ChevronDown, GitMerge, RotateCcw } from "lucide-react";
 import { type ComponentProps, useEffect, useId, useRef, useState } from "react";
 import { BrandLoading } from "../../../components/BrandLoading";
 import { DSBadge, DSButton, DSEmptyState, DSError } from "../../../components/DesignSystem";
@@ -9,6 +9,7 @@ import { ArrowTabs } from "../../components/ArrowTabs";
 import { FindingSelection } from "../../components/FindingSelection";
 import { ReviewDecisionCarousel } from "../../components/ReviewDecisionCarousel";
 import { reviewBodyHasPostableFinding, reviewBodySuggestions, reviewPointKind } from "../../lib/findings";
+import { useForgeTerms } from "../../lib/forgeTerms";
 import { parseChunkProgress } from "../../lib/reviewFlow";
 import { ContextView, PlatformChunkProgress, RiskView, UsageView } from "./RunDetails";
 import { parseComments, parseRisk, type ReviewDecision, shortSha, streamStatusLabel } from "./reviewHelpers";
@@ -60,6 +61,7 @@ export function ReviewDetail({
   const comments = parseComments(displayRun?.commentsJson ?? null);
   const hasBodyFindings = reviewBodyHasPostableFinding(displayRun?.reviewBody ?? null);
   const suggestions = reviewBodySuggestions(displayRun?.reviewBody ?? null);
+  const terms = useForgeTerms();
   const hasFindings = comments.length > 0 || hasBodyFindings;
   const hasActionableFindings =
     comments.some(
@@ -82,28 +84,28 @@ export function ReviewDetail({
       label: "Request changes",
       description: "Ask the author to fix selected findings.",
       tone: "danger",
-      enabled: hasActionableFindings && !allFindingsDuplicated && !ownPr,
+      enabled: terms.verdicts && hasActionableFindings && !allFindingsDuplicated && !ownPr,
     },
     {
       value: "comment",
       label: allFindingsDuplicated ? "Mark covered" : "Post comments",
       description: allFindingsDuplicated
         ? "Record that another run already posted them."
-        : "Share findings without a GitHub verdict.",
+        : `Share findings without a ${terms.platform} verdict.`,
       tone: "secondary",
       enabled: hasFindings || Boolean(suggestions),
     },
     {
       value: "approve_post",
       label: "Approve",
-      description: "Approve this pull request on GitHub.",
+      description: `Approve this ${terms.pr} on ${terms.platform}.`,
       tone: "primary",
-      enabled: !hasFindings && !ownPr,
+      enabled: terms.verdicts && !hasFindings && !ownPr,
     },
     {
       value: "mark_reviewed",
       label: "Mark reviewed",
-      description: "Close locally without posting to GitHub.",
+      description: `Close locally without posting to ${terms.platform}.`,
       tone: "secondary",
       enabled: ownPr || !hasActionableFindings || allFindingsDuplicated,
     },
@@ -132,10 +134,10 @@ export function ReviewDetail({
               href={card.url}
               target="_blank"
               rel="noreferrer"
-              aria-label="Open on GitHub"
-              title="Open on GitHub"
+              aria-label={`Open on ${terms.platform}`}
+              title={`Open on ${terms.platform}`}
             >
-              <GitHubMark className="size-4" />
+              {terms.forge === "github" ? <GitHubMark className="size-4" /> : <GitMerge className="size-4" />}
             </a>
           )}
           {canCancel ? (
@@ -238,7 +240,7 @@ export function ReviewDetail({
               {card.isStacked && (
                 <div className="review-run-stacked-summary rounded-xl border border-line bg-surface p-4">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="m-0 text-sm font-semibold text-fg">Stacked PR</h2>
+                    <h2 className="m-0 text-sm font-semibold text-fg">Stacked {terms.short}</h2>
                     <span className="rounded-full border border-line bg-surface-muted px-2.5 py-1 text-xs font-bold text-fg-muted">
                       {card.baseRef ?? "base"} → {card.headRef ?? "head"}
                     </span>
@@ -247,7 +249,7 @@ export function ReviewDetail({
                     )}
                   </div>
                   <p className="m-0 mt-2 text-sm text-fg-muted">
-                    Review uses the immediate base branch, so comments target only this PR's delta.
+                    Review uses the immediate base branch, so comments target only this {terms.short}'s delta.
                   </p>
                 </div>
               )}
@@ -304,7 +306,7 @@ export function ReviewDetail({
                                 {" "}
                                 ·{" "}
                                 <a className="underline" href={comment.duplicateUrl} target="_blank" rel="noreferrer">
-                                  View on GitHub
+                                  View on {terms.platform}
                                 </a>
                               </>
                             )}
@@ -348,7 +350,9 @@ export function ReviewDetail({
         >
           <p className="m-0 text-small text-fg-muted">
             {ownPr
-              ? "This is your PR. GitHub blocks self-approval and request-changes; mark reviewed locally or skip."
+              ? terms.verdicts
+                ? "This is your PR. GitHub blocks self-approval and request-changes; mark reviewed locally or skip."
+                : "This is your MR. Mark reviewed locally or skip."
               : allFindingsDuplicated
                 ? `All ${duplicateCount} finding${duplicateCount === 1 ? "" : "s"} already posted by another OpenCodeReview run. Mark covered locally.`
                 : hasQuestions && !hasActionableFindings
@@ -357,9 +361,11 @@ export function ReviewDetail({
                     ? duplicateCount > 0
                       ? `Post new findings; ${duplicateCount} duplicate${duplicateCount === 1 ? "" : "s"} will be suppressed.`
                       : hasBodyFindings && comments.length === 0
-                        ? "Post findings to GitHub as a review comment, or skip without posting."
-                        : "Post inline findings to GitHub, or skip without posting."
-                    : "No findings. Approve on GitHub, mark reviewed locally, or skip."}
+                        ? `Post findings to ${terms.platform} as a review comment, or skip without posting.`
+                        : `Post inline findings to ${terms.platform}, or skip without posting.`
+                    : terms.verdicts
+                      ? "No findings. Approve on GitHub, mark reviewed locally, or skip."
+                      : "No findings. Mark reviewed locally, or skip."}
           </p>
           <div className="review-decision-controls flex items-center gap-3">
             <ReviewDecisionCarousel

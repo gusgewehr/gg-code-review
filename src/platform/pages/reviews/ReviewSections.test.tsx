@@ -1,5 +1,7 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
+import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ReviewCard } from "../../../types";
 import { type ReviewSection, ReviewSections } from "./ReviewSections";
@@ -61,4 +63,32 @@ describe("labelCard", () => {
     expect(labelCard({ lane: "posted", suggestionsOnly: false, questionsOnly: true })).toBe("Questions posted");
     expect(labelCard({ lane: "ready", suggestionsOnly: true, questionsOnly: true })).toBe("Ready to post");
   });
+});
+
+it("shows !n instead of #n on GitLab", () => {
+  const client = new QueryClient();
+  client.setQueryData(["forge", "status"], {
+    provider: "gitlab",
+    host: "gitlab.example.com",
+    loggedIn: true,
+    login: "bot",
+    expiresAt: null,
+    error: null,
+  });
+  const container = document.createElement("div");
+  container.innerHTML = renderToStaticMarkup(
+    <QueryClientProvider client={client}>
+      <ReviewSections
+        sections={sections}
+        items={[card(1, "manual_required")]}
+        expandAll
+        selectedId={null}
+        attentionPrIds={new Set()}
+        now={0}
+        onSelect={() => {}}
+      />
+    </QueryClientProvider>,
+  );
+  expect(container.textContent).toContain("!1");
+  expect(container.textContent).not.toContain("#1");
 });

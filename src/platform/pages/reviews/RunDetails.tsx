@@ -1,4 +1,5 @@
 import type { ReviewContextPlan, ReviewRun, UsageStats } from "../../../types";
+import { useForgeTerms } from "../../lib/forgeTerms";
 import { type ChunkProgress, formatFlowTokens, quoteShellArgument, totalTokens } from "../../lib/reviewFlow";
 import { durationLabel, fmtTokens, parseRisk, shortSha } from "./reviewHelpers";
 
@@ -35,6 +36,7 @@ export function PlatformChunkProgress({ progress }: { progress: ChunkProgress })
 }
 
 export function UsageView({ run, usage }: { run: ReviewRun; usage: UsageStats | null }) {
+  const terms = useForgeTerms();
   const hasRunUsage = run.inputTokens > 0 || run.outputTokens > 0 || run.cacheReadTokens > 0;
   if (!hasRunUsage && !usage?.runCount) return null;
   return (
@@ -52,7 +54,7 @@ export function UsageView({ run, usage }: { run: ReviewRun; usage: UsageStats | 
       {usage && usage.runCount > 1 && (
         <div className="mt-3 flex justify-between border-t border-line pt-3 text-xs font-semibold text-fg-muted">
           <span>
-            PR total ({usage.runCount} runs) · <b className="text-fg">{formatFlowTokens(totalTokens(usage))}</b>
+            {terms.short} total ({usage.runCount} runs) · <b className="text-fg">{formatFlowTokens(totalTokens(usage))}</b>
           </span>
           <span>{tokenSplit(usage)}</span>
         </div>
@@ -107,6 +109,7 @@ export function RiskView({ run }: { run: ReviewRun }) {
 }
 
 export function ContextView({ context }: { context: ReviewContextPlan }) {
+  const terms = useForgeTerms();
   const changed = context.changedFiles.length;
   const reprocess = context.scopeSelection?.mode === "reprocess";
   const contentReuse = context.scopeSelection?.mode === "content_reuse";
@@ -135,7 +138,7 @@ export function ContextView({ context }: { context: ReviewContextPlan }) {
                 ? "Base sync"
                 : context.incremental
                   ? "Incremental"
-                  : "Full PR"}
+                  : `Full ${terms.short}`}
         </span>
         {summary}
         <span className="float-right text-fg-subtle">›</span>
@@ -151,7 +154,7 @@ export function ContextView({ context }: { context: ReviewContextPlan }) {
             </>
           ) : (
             <>
-              Full PR vs base: <code>{shortSha(context.baseSha)}</code> → <code>{shortSha(context.headSha)}</code>.
+              Full {terms.short} vs base: <code>{shortSha(context.baseSha)}</code> → <code>{shortSha(context.headSha)}</code>.
             </>
           )}
         </p>

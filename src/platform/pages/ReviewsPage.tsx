@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ListFilter, PanelLeftClose, PanelLeftOpen, RefreshCw, Search } from "lucide-react";
+import { GitMerge, ListFilter, PanelLeftClose, PanelLeftOpen, RefreshCw, Search } from "lucide-react";
 import {
   type ComponentProps,
   type Dispatch,
@@ -39,6 +39,7 @@ import {
   reviewWorkspaceReducer,
   runMetrics,
 } from "../lib/reviewFlow";
+import { useForgeTerms } from "../lib/forgeTerms";
 import { formatError, required } from "../lib/utils";
 import { Avatar } from "./reviews/Avatar";
 import { ReviewDetail } from "./reviews/ReviewDetail";
@@ -76,6 +77,7 @@ const sections: ReviewSection[] = [
 ];
 
 export function ReviewsPage() {
+  const terms = useForgeTerms();
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
   const [findingDraft, setFindingDraft] = useState<FindingSelectionDraft | null>(null);
@@ -374,14 +376,14 @@ export function ReviewsPage() {
       items.filter((item) => {
         const matchesSearch =
           !query ||
-          [item.repoFullName, item.title, item.author, String(item.number), `#${item.number}`].some((value) =>
+          [item.repoFullName, item.title, item.author, String(item.number), terms.ref(item.number)].some((value) =>
             value.toLowerCase().includes(query),
           );
         const matchesAuthor = !selectedAuthors.size || selectedAuthors.has(item.author);
         const matchesRepository = !selectedRepositories.size || selectedRepositories.has(item.repoFullName);
         return matchesSearch && matchesAuthor && matchesRepository;
       }),
-    [items, query, selectedAuthors, selectedRepositories],
+    [items, query, selectedAuthors, selectedRepositories, terms],
   );
   const toggleFilter = (setter: Dispatch<SetStateAction<Set<string>>>, value: string) =>
     setter((current) => {
@@ -521,7 +523,7 @@ export function ReviewsPage() {
                 aria-label="Search reviews"
                 icon={<Search className="size-4" />}
                 value={search}
-                placeholder="Search PRs, repos, authors…"
+                placeholder={`Search ${terms.shorts}, repos, authors…`}
                 onChange={(event) => setSearch(event.target.value)}
               />
             )}
@@ -563,7 +565,7 @@ export function ReviewsPage() {
               workspace.processesOpen && <BrandLoading size="compact" label="Loading reviews…" />
             ) : filteredItems.length === 0 ? (
               <DSEmptyState>
-                {query ? "No pull requests match your search." : "Poll GitHub to find pull requests."}
+                {query ? `No ${terms.prs} match your search.` : `Poll ${terms.platform} to find ${terms.prs}.`}
               </DSEmptyState>
             ) : (
               <ReviewSections
@@ -621,7 +623,7 @@ export function ReviewsPage() {
                     <div className="review-live-title-row flex items-center gap-2">
                       <Avatar card={monitoring} />
                       <h2 className="truncate text-caption font-medium text-fg-subtle">
-                        {monitoring.repoFullName} <span className="tabular-nums">#{monitoring.number}</span>
+                        {monitoring.repoFullName} <span className="tabular-nums">{terms.ref(monitoring.number)}</span>
                       </h2>
                     </div>
                     <p className="mt-0.5 truncate text-heading text-fg" title={monitoring.title}>
@@ -653,10 +655,10 @@ export function ReviewsPage() {
                   href={monitoring.url}
                   target="_blank"
                   rel="noreferrer"
-                  aria-label="Open on GitHub"
-                  title="Open on GitHub"
+                  aria-label={`Open on ${terms.platform}`}
+                  title={`Open on ${terms.platform}`}
                 >
-                  <GitHubMark className="size-4" />
+                  {terms.forge === "github" ? <GitHubMark className="size-4" /> : <GitMerge className="size-4" />}
                 </a>
               )}
             </header>
@@ -772,7 +774,7 @@ export function ReviewsPage() {
             !workspace.processesOpen && <BrandLoading label="Loading reviews…" />
           ) : (
             <div className="review-workspace-empty m-6">
-              <DSEmptyState>Poll GitHub, then select a pull request to inspect its process.</DSEmptyState>
+              <DSEmptyState>{`Poll ${terms.platform}, then select a ${terms.pr} to inspect its process.`}</DSEmptyState>
             </div>
           )}
         </div>

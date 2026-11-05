@@ -2,6 +2,7 @@ import { AlertTriangle, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cx, toneDot, toneText } from "../../../components/DesignSystem";
 import type { ReviewCard } from "../../../types";
+import { useForgeTerms } from "../../lib/forgeTerms";
 import { Avatar } from "./Avatar";
 import { byRecent, itemTime, labelCard, laneTone } from "./reviewHelpers";
 
@@ -50,6 +51,7 @@ export function ReviewSections({
   now: number;
   onSelect: (card: ReviewCard) => void;
 }) {
+  const terms = useForgeTerms();
   const [open, setOpen] = useState(() => storedOpen(sections));
   const grouped = sections.map((section) => ({
     ...section,
@@ -97,7 +99,7 @@ export function ReviewSections({
               type="button"
               aria-pressed={selectedId === card.id}
               aria-label={`${card.title} · ${labelCard(card)}`}
-              title={`${card.title}\n${card.repoFullName.split("/").pop()} #${card.number} · ${labelCard(card)}`}
+              title={`${card.title}\n${card.repoFullName.split("/").pop()} ${terms.ref(card.number)} · ${labelCard(card)}`}
               className={cx(
                 "relative grid size-12 cursor-pointer place-items-center rounded-xl transition-colors",
                 selectedId === card.id ? "bg-surface-muted" : "hover:bg-surface-muted/50",
@@ -190,7 +192,7 @@ export function ReviewSections({
                       </div>
                       <div className="review-process-item-meta mt-0.5 flex items-center gap-2">
                         <span className="review-process-item-title min-w-0 flex-1 truncate text-caption text-fg-subtle">
-                          {card.repoFullName.split("/").pop()} <span className="tabular-nums">#{card.number}</span>
+                          {card.repoFullName.split("/").pop()} <span className="tabular-nums">{terms.ref(card.number)}</span>
                         </span>
                         {attentionPrIds.has(card.id) && (
                           <AlertTriangle className="size-3.5 flex-none text-warning" aria-label="Needs attention" />
