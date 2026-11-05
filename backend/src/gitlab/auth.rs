@@ -77,7 +77,7 @@ impl Code {
             Code::UnreachableOrTls => format!(
                 "Could not reach {host} or verify its certificate. Check the host and that the internal CA is mounted for the server (`/run/ocr-ca/ca.crt`)."
             ),
-            Code::Generic => "Could not connect to GitLab. Check the server logs for details.".into(),
+            Code::Generic => "GitLab sign-in failed. Check that glab is installed and the personal access token (scope api) is valid and not expired, then reconnect in GitLab connection.".into(),
         }
     }
     fn error(self, host: &str) -> StatusError {
