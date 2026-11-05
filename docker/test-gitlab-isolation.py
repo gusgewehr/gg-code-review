@@ -84,5 +84,23 @@ def check_no_skip_verify():
     print("ok no tls skip options")
 
 
-for fn in (check_dockerfile, check_runner_image, check_compose, check_no_skip_verify):
+INSTRUCTIONS = {"FROM", "RUN", "CMD", "LABEL", "EXPOSE", "ENV", "ADD", "COPY", "ENTRYPOINT", "VOLUME", "USER",
+                "WORKDIR", "ARG", "ONBUILD", "STOPSIGNAL", "HEALTHCHECK", "SHELL", "MAINTAINER"}
+
+
+def check_dockerfile_continuations():
+    # Line-based: sound only while no Dockerfile uses heredocs.
+    for p in sorted((ROOT / "docker").glob("Dockerfile*")):
+        cont = False
+        for n, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
+            s = line.strip()
+            if not s or s.startswith("#"):
+                continue
+            if not cont and s.split()[0].upper() not in INSTRUCTIONS:
+                fail("%s:%d is not an instruction or continuation" % (p.relative_to(ROOT), n))
+            cont = line.rstrip().endswith("\\")
+    print("ok dockerfile continuations")
+
+
+for fn in (check_dockerfile, check_dockerfile_continuations, check_runner_image, check_compose, check_no_skip_verify):
     fn()
