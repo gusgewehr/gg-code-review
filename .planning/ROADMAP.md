@@ -111,7 +111,7 @@ Plans:
 | Fase | Planos concluídos | Status | Concluída em |
 |------|-------------------|--------|--------------|
 | 1. Camada de provider (Forge) | 1/1 | Complete   | 2026-11-05 |
-| 2. Conexão com o GitLab | 4/4 | Complete   | 2026-11-05 |
+| 2. Conexão com o GitLab | 5/5 | Complete   | 2026-11-05 |
 | 3. Leitura GitLab | 0/? | Não iniciada | - |
 | 4. Escrita GitLab | 0/? | Não iniciada | - |
 | 5. Indexação, UI e docs | 0/? | Não iniciada | - |
