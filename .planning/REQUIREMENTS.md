@@ -88,33 +88,33 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Fase 2 | Implementado |
-| AUTH-02 | Fase 2 | Implementado |
-| AUTH-03 | Fase 2 | Implementado |
-| AUTH-04 | Fase 2 | Implementado |
-| AUTH-05 | Fase 2 | Implementado |
-| FORGE-01 | Fase 2 | Implementado |
-| FORGE-02 | Fase 1 | Pendente |
-| FORGE-03 | Fase 3 | Pendente |
-| IDX-01 | Fase 5 | Implementado |
-| IDX-02 | Fase 5 | Implementado |
-| PUB-01 | Fase 4 | Completo |
-| PUB-02 | Fase 4 | Completo |
-| PUB-03 | Fase 4 | Completo |
-| PUB-04 | Fase 4 | Completo |
-| PUB-05 | Fase 4 | Completo |
-| PUB-06 | Fase 4 | Completo |
-| PUB-07 | Fase 4 | Completo |
-| REPO-01 | Fase 3 | Pendente |
-| REPO-02 | Fase 3 | Pendente |
-| REPO-03 | Fase 3 | Pendente |
-| REPO-04 | Fase 3 | Pendente |
-| REPO-05 | Fase 3 | Pendente |
-| REV-01 | Fase 3 | Pendente |
-| REV-02 | Fase 3 | Pendente |
-| REV-03 | Fase 3 | Pendente |
-| UI-01 | Fase 5 | Implementado |
-| UI-02 | Fase 5 | Implementado |
+| AUTH-01 | Fase 2 | Implementado (UAT GitLab real pendente) |
+| AUTH-02 | Fase 2 | Implementado (UAT GitLab real pendente) |
+| AUTH-03 | Fase 2 | Implementado (UAT GitLab real pendente) |
+| AUTH-04 | Fase 2 | Implementado (UAT GitLab real pendente) |
+| AUTH-05 | Fase 2 | Implementado (UAT GitLab real pendente) |
+| FORGE-01 | Fase 2 | Implementado (UAT GitLab real pendente) |
+| FORGE-02 | Fase 1 | Implementado (UAT GitLab real pendente) |
+| FORGE-03 | Fase 3 | Implementado (UAT GitLab real pendente) |
+| IDX-01 | Fase 5 | Implementado (UAT GitLab real pendente) |
+| IDX-02 | Fase 5 | Implementado (UAT GitLab real pendente) |
+| PUB-01 | Fase 4 | Implementado (UAT GitLab real pendente) |
+| PUB-02 | Fase 4 | Implementado (UAT GitLab real pendente) |
+| PUB-03 | Fase 4 | Implementado (UAT GitLab real pendente) |
+| PUB-04 | Fase 4 | Implementado (UAT GitLab real pendente) |
+| PUB-05 | Fase 4 | Implementado (UAT GitLab real pendente) |
+| PUB-06 | Fase 4 | Implementado (UAT GitLab real pendente) |
+| PUB-07 | Fase 4 | Implementado (UAT GitLab real pendente) |
+| REPO-01 | Fase 3 | Implementado (UAT GitLab real pendente) |
+| REPO-02 | Fase 3 | Implementado (UAT GitLab real pendente) |
+| REPO-03 | Fase 3 | Implementado (UAT GitLab real pendente) |
+| REPO-04 | Fase 3 | Implementado (UAT GitLab real pendente) |
+| REPO-05 | Fase 3 | Implementado (UAT GitLab real pendente) |
+| REV-01 | Fase 3 | Implementado (UAT GitLab real pendente) |
+| REV-02 | Fase 3 | Implementado (UAT GitLab real pendente) |
+| REV-03 | Fase 3 | Implementado (UAT GitLab real pendente) |
+| UI-01 | Fase 5 | Implementado (UAT GitLab real pendente) |
+| UI-02 | Fase 5 | Implementado (UAT GitLab real pendente) |
 
 **Coverage:**
 - v1 requirements: 27 total
@@ -123,4 +123,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-11-05*
-*Last updated: 2026-11-05 after initial definition*
+*Last updated: 2026-11-05 at v1.0 milestone audit (all v1 implemented; real-GitLab UAT pending)*

@@ -11,7 +11,7 @@ Cinco fases, na ordem de risco: primeiro a camada de provider sem mudar o compor
 - [x] **Phase 3: Leitura GitLab: descoberta e preparação de MRs** - Lista projetos, descobre MRs por polling e prepara a revisão com refs vivos
  (completed 2026-11-05)
 - [x] **Phase 4: Escrita GitLab: publicação dos resultados** - Findings inline, nota de status, resumo, idempotência e segurança do texto (completed 2026-11-05)
-- [ ] **Phase 5: Indexação, skills, UI e documentação** - Paridade final: indexação, skills, termos do GitLab na UI, docs e release note
+- [x] **Phase 5: Indexação, skills, UI e documentação** - Paridade final: indexação, skills, termos do GitLab na UI, docs e release note (completed 2026-11-05)
 
 ## Detalhes das fases
 
@@ -150,4 +150,4 @@ Plans:
 | 2. Conexão com o GitLab | 5/5 | Complete   | 2026-11-05 |
 | 3. Leitura GitLab | 4/4 | Complete   | 2026-11-05 |
 | 4. Escrita GitLab | 4/4 | Complete   | 2026-11-05 |
-| 5. Indexação, UI e docs | 0/? | Não iniciada | - |
+| 5. Indexação, UI e docs | 3/3 | Complete   | 2026-11-05 |
