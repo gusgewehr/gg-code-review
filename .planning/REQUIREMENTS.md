@@ -15,11 +15,11 @@ Escopo da v1: dar acesso ao GitLab com paridade exata ao fluxo GitHub atual. Nad
 
 ### Conexão (AUTH)
 
-- [ ] **AUTH-01**: Admin conecta o GitLab colando um PAT em Settings; o token vai ao `glab` via stdin e nunca aparece no browser, logs ou banco
-- [ ] **AUTH-02**: Settings mostra o status da conexão GitLab (host, usuário) e um erro acionável quando o token não tem escopo `api`, está expirado ou o host não responde
-- [ ] **AUTH-03**: Admin pode desconectar o GitLab
+- [x] **AUTH-01**: Admin conecta o GitLab colando um PAT em Settings; o token vai ao `glab` via stdin e nunca aparece no browser, logs ou banco
+- [x] **AUTH-02**: Settings mostra o status da conexão GitLab (host, usuário) e um erro acionável quando o token não tem escopo `api`, está expirado ou o host não responde
+- [x] **AUTH-03**: Admin pode desconectar o GitLab
 - [x] **AUTH-04**: O server confia na CA interna montada no container para `glab` e `git`, sem opção de desligar a verificação TLS
-- [ ] **AUTH-05**: `glab` é instalado só na imagem do server, com versão fixa e checksum verificado; runners não recebem `glab`, token nem CA
+- [x] **AUTH-05**: `glab` é instalado só na imagem do server, com versão fixa e checksum verificado; runners não recebem `glab`, token nem CA
 
 ### Repositórios e descoberta (REPO)
 
@@ -88,12 +88,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Fase 2 | Pendente |
-| AUTH-02 | Fase 2 | Pendente |
-| AUTH-03 | Fase 2 | Pendente |
-| AUTH-04 | Fase 2 | Pendente |
-| AUTH-05 | Fase 2 | Pendente |
-| FORGE-01 | Fase 2 | Pendente |
+| AUTH-01 | Fase 2 | Implementado |
+| AUTH-02 | Fase 2 | Implementado |
+| AUTH-03 | Fase 2 | Implementado |
+| AUTH-04 | Fase 2 | Implementado |
+| AUTH-05 | Fase 2 | Implementado |
+| FORGE-01 | Fase 2 | Implementado |
 | FORGE-02 | Fase 1 | Pendente |
 | FORGE-03 | Fase 3 | Pendente |
 | IDX-01 | Fase 5 | Pendente |
