@@ -22,9 +22,28 @@ impl WriteError {
     }
 }
 
-fn has_status(text: &str, codes: &[&str]) -> bool {
-    text.split(|c: char| !c.is_ascii_alphanumeric())
-        .any(|t| codes.contains(&t))
+/// The HTTP status glab reports on stderr: its `(HTTP 404)` / `HTTP 404` suffix, else a status leading a line
+/// (`glab: 404 Not Found`). Stdout (the response body) is never read, and ids or paths elsewhere in a line never
+/// count, so an MR iid like 400 cannot turn a 5xx into a rejection.
+fn http_status(stderr: &str) -> Option<u16> {
+    let code = |s: &str| {
+        let digits: String = s.chars().take_while(char::is_ascii_digit).collect();
+        (digits.len() == 3).then(|| digits.parse().ok()).flatten()
+    };
+    stderr
+        .rfind("HTTP ")
+        .and_then(|at| code(&stderr[at + 5..]))
+        .or_else(|| {
+            stderr.lines().find_map(|line| {
+                let line = line.trim();
+                code(
+                    line.strip_prefix("glab:")
+                        .or_else(|| line.strip_prefix("ERROR:"))
+                        .unwrap_or(line)
+                        .trim_start(),
+                )
+            })
+        })
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -73,32 +92,32 @@ pub(super) fn api_write_at(
         if out.status.success() {
             return Ok(out.stdout);
         }
-        let text = redact(&text_of(&out), "");
-        let class = classify(&text, host);
-        if matches!(class.code, "unauthorized" | "expired") {
-            return Err(WriteError::Other(TOKEN_MESSAGE.into()));
-        }
-        if has_status(&text, &["403"]) {
-            return Err(WriteError::Other(format!(
+        let status = http_status(&String::from_utf8_lossy(&out.stderr));
+        match status {
+            Some(401) => return Err(WriteError::Other(TOKEN_MESSAGE.into())),
+            Some(403) => {
+                return Err(WriteError::Other(format!(
                 "GitLab refused to write {what}: the token needs the api scope and at least Reporter access to this project."
-            )));
+            )))
+            }
+            Some(400 | 409 | 422) => return Err(WriteError::Rejected(format!("GitLab rejected {what}."))),
+            Some(404) => {
+                return Err(WriteError::NotFound(format!(
+                    "GitLab could not find the target of {what}."
+                )))
+            }
+            _ => {}
         }
-        if has_status(&text, &["400", "409", "422"]) {
-            return Err(WriteError::Rejected(format!("GitLab rejected {what}.")));
-        }
-        if has_status(&text, &["404"]) {
-            return Err(WriteError::NotFound(format!(
-                "GitLab could not find the target of {what}."
-            )));
-        }
-        let retry =
-            has_status(&text, &["429"]) || (method != "POST" && has_status(&text, &["500", "502", "503", "504"]));
+        let retry = status == Some(429) || (method != "POST" && matches!(status, Some(500 | 502 | 503 | 504)));
         if attempt < 3 && retry {
             std::thread::sleep(Duration::from_millis(backoff_ms << attempt));
             attempt += 1;
             continue;
         }
-        eprintln!("gitlab write: {} for {what}", class.code);
+        eprintln!(
+            "gitlab write: {} for {what}",
+            classify(&redact(&text_of(&out), ""), host).code
+        );
         return Err(WriteError::Other(generic));
     }
 }
@@ -177,6 +196,9 @@ echo '{}'"#;
             ("w-422", "422 Unprocessable", 0),
             ("w-404", "404 Not Found", 1),
             ("w-401", "401 Unauthorized", 2),
+            ("w-h400", "glab: 400 Bad request - Note is invalid (HTTP 400)", 0),
+            ("w-h404", "glab: HTTP 404", 1),
+            ("w-h401", "glab: 401 Unauthorized (HTTP 401)", 2),
         ] {
             let (dir, bin) = setup(name, &format!("echo '{stderr}' >&2; exit 1"));
             let err = run(&bin, &dir, "POST", Some(&serde_json::json!({}))).err().unwrap();
@@ -188,6 +210,21 @@ echo '{}'"#;
             assert!(!err.message().contains("glpat-"));
             let _ = std::fs::remove_dir_all(&dir);
         }
+    }
+
+    #[test]
+    fn ids_and_paths_never_count_as_statuses() {
+        // A 5xx on MR !400 whose body echoes ids: neither Rejected (fallback duplicate) nor a token error.
+        let script = r#"echo '{"id":401,"iid":400,"message":"404"}'
+echo 'glab: 500 Internal Server Error POST projects/1/merge_requests/400/discussions (HTTP 500)' >&2; exit 1"#;
+        let (dir, bin) = setup("w-ids", script);
+        let err = run(&bin, &dir, "POST", Some(&serde_json::json!({}))).err().unwrap();
+        assert!(matches!(&err, WriteError::Other(m) if m != TOKEN_MESSAGE));
+        let _ = std::fs::remove_dir_all(&dir);
+        assert_eq!(
+            http_status("Post \"https://h/api/v4/projects/1/merge_requests/409/notes\": EOF"),
+            None
+        );
     }
 
     #[test]
