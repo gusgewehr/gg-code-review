@@ -111,7 +111,7 @@ Plans:
 **Wave 1**
 
 - [x] 04-01-PLAN.md — GitLab write primitives: body sanitizer, `glab api --input` JSON writer, MR diff line map/position builder
-- [ ] 04-02-PLAN.md — status-comment in-place edit hook; GitLab never approves/requests changes; GitLab commit link
+- [x] 04-02-PLAN.md — status-comment in-place edit hook; GitLab never approves/requests changes; GitLab commit link
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -143,5 +143,5 @@ Plans:
 | 1. Camada de provider (Forge) | 1/1 | Complete   | 2026-11-05 |
 | 2. Conexão com o GitLab | 5/5 | Complete   | 2026-11-05 |
 | 3. Leitura GitLab | 4/4 | Complete   | 2026-11-05 |
-| 4. Escrita GitLab | 1/4 | In Progress|  |
+| 4. Escrita GitLab | 2/4 | In Progress|  |
 | 5. Indexação, UI e docs | 0/? | Não iniciada | - |
