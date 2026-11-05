@@ -6,7 +6,7 @@ Cinco fases, na ordem de risco: primeiro a camada de provider sem mudar o compor
 
 ## Fases
 
-- [ ] **Phase 1: Camada de provider (Forge) sem mudança de comportamento** - Refatora o acesso ao GitHub atrás de uma interface, sem alterar nada no fluxo atual
+- [x] **Phase 1: Camada de provider (Forge) sem mudança de comportamento** - Refatora o acesso ao GitHub atrás de uma interface, sem alterar nada no fluxo atual (completed 2026-11-05)
 - [ ] **Phase 2: Conexão com o GitLab self-hosted** - Seleção de provider por deploy, `glab` fixo na imagem do server, CA interna e login por PAT na UI
 - [ ] **Phase 3: Leitura GitLab: descoberta e preparação de MRs** - Lista projetos, descobre MRs por polling e prepara a revisão com refs vivos
 - [ ] **Phase 4: Escrita GitLab: publicação dos resultados** - Findings inline, nota de status, resumo, idempotência e segurança do texto
@@ -26,7 +26,7 @@ Cinco fases, na ordem de risco: primeiro a camada de provider sem mudar o compor
 **Plans**: 1 plan
 
 Plans:
-- [ ] 01-01-PLAN.md — forge seam (re-export + enum Forge { GitHub }), github:: -> forge:: rewrite, URL/refspec via Forge methods
+- [x] 01-01-PLAN.md — forge seam (re-export + enum Forge { GitHub }), github:: -> forge:: rewrite, URL/refspec via Forge methods
 
 ### Phase 2: Conexão com o GitLab self-hosted
 **Goal**: O admin escolhe GitLab como provider do deploy e conecta à instância interna (CA própria) colando um PAT, sem expor o token
@@ -82,7 +82,7 @@ Plans:
 
 | Fase | Planos concluídos | Status | Concluída em |
 |------|-------------------|--------|--------------|
-| 1. Camada de provider (Forge) | 0/? | Não iniciada | - |
+| 1. Camada de provider (Forge) | 1/1 | Complete   | 2026-11-05 |
 | 2. Conexão com o GitLab | 0/? | Não iniciada | - |
 | 3. Leitura GitLab | 0/? | Não iniciada | - |
 | 4. Escrita GitLab | 0/? | Não iniciada | - |
