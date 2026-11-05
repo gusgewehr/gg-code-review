@@ -554,6 +554,9 @@ pub(crate) fn handle_completed_review(
 ) {
     if crate::forge::current() == crate::forge::Forge::GitLab {
         log_auto_post(inputs, "not attempted: publishing to GitLab arrives in Phase 4");
+        // Leave "reviewing" locally; the publication steps below reach gh.
+        let _ = db.mark_review_ready_for_run(inputs.pr_id, inputs.run_id);
+        let _ = db.set_pr_lane(inputs.pr_id, "ready", Some("Publishing to GitLab arrives in Phase 4"));
         return;
     }
     let Ok(Some(run)) = db.review_run_by_id(inputs.run_id) else {
