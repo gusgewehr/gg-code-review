@@ -24,7 +24,10 @@ export function ReviewSettingsPanel({
     onSave(key, JSON.stringify(items.map((item) => item.trim()).filter(Boolean)));
   return (
     <SettingsSection id="selection" activeSection={activeSection}>
-      <SettingsGroup title={`${terms.short} selection`} description={`Control which ${terms.shorts} enter the review queue.`}>
+      <SettingsGroup
+        title={`${terms.short} selection`}
+        description={`Control which ${terms.shorts} enter the review queue.`}
+      >
         <SettingChoice
           title="Review scope"
           description={`Use assignments and ${terms.platform} teams, or review all open ${terms.shorts}.`}
@@ -50,7 +53,7 @@ export function ReviewSettingsPanel({
         </SettingRow>
         <SettingRow
           title="Reviews at a time"
-          description="How many pull requests are reviewed at once. The default is 20; each review runs in its own isolated container."
+          description={`How many ${terms.prs} are reviewed at once. The default is 20; each review runs in its own isolated container.`}
         >
           <input
             className="settings-number-input h-9 w-24 rounded-md border border-line bg-surface px-3 text-small text-fg shadow-card outline-none focus:border-brand focus:ring-3 focus:ring-brand/15"

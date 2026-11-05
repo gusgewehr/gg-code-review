@@ -156,7 +156,7 @@ export function SettingsPage() {
     onError: (cause) => setError(formatError(cause)),
   });
   const confirmSignOut = () => {
-    if (window.confirm("Sign out of GitHub? Reviews stop until you connect again.")) signOut.mutate();
+    if (window.confirm(`Sign out of ${terms.platform}? Reviews stop until you connect again.`)) signOut.mutate();
   };
   const save = useMutation({
     mutationFn: setupApi.saveSettingsBatch,
