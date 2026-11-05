@@ -11,7 +11,7 @@ Escopo da v1: dar acesso ao GitLab com paridade exata ao fluxo GitHub atual. Nad
 
 - [x] **FORGE-01**: Admin escolhe o provider do deploy (GitHub ou GitLab) por configuração; o server se recusa a iniciar se o provider ou o host mudar sobre dados existentes
 - [x] **FORGE-02**: Fluxo GitHub continua idêntico após a camada de provider (testes, smokes, corpos de comentário e URLs)
-- [ ] **FORGE-03**: Projetos em namespaces aninhados (grupo/subgrupo/projeto) funcionam em todo o produto (escopo, retenção, URLs)
+- [x] **FORGE-03**: Projetos em namespaces aninhados (grupo/subgrupo/projeto) funcionam em todo o produto (escopo, retenção, URLs)
 
 ### Conexão (AUTH)
 

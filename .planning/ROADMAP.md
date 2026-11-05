@@ -79,7 +79,7 @@ Plans:
 **Wave 1**
 
 - [x] 03-01-PLAN.md — GitLab read layer (glab api runner, projects, MRs, live state) + forge dispatch wrappers
-- [ ] 03-02-PLAN.md — frontend: nested repoOwner, GitLab copy in Repository access
+- [x] 03-02-PLAN.md — frontend: nested repoOwner, GitLab copy in Repository access
 
 **Wave 2** *(blocked on 03-01)*
 
@@ -126,6 +126,6 @@ Plans:
 |------|-------------------|--------|--------------|
 | 1. Camada de provider (Forge) | 1/1 | Complete   | 2026-11-05 |
 | 2. Conexão com o GitLab | 5/5 | Complete   | 2026-11-05 |
-| 3. Leitura GitLab | 1/4 | In Progress|  |
+| 3. Leitura GitLab | 2/4 | In Progress|  |
 | 4. Escrita GitLab | 0/? | Não iniciada | - |
 | 5. Indexação, UI e docs | 0/? | Não iniciada | - |
