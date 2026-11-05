@@ -1,7 +1,7 @@
 //! glab login/status/logout. The token reaches glab on stdin only and is never stored by the app.
 
 use serde::{Deserialize, Serialize};
-use std::io::Write;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output, Stdio};
 use std::time::{Duration, Instant};
@@ -194,10 +194,22 @@ fn run_glab(bin: &Path, host: &str, dir: &Path, args: &[&str], stdin: Option<&st
             let _ = pipe.write_all(text.as_bytes());
         }
     }
+    // Drain both pipes concurrently so output above the pipe buffer cannot block glab.
+    let drain = |pipe: Option<Box<dyn Read + Send>>| {
+        std::thread::spawn(move || {
+            let mut buf = Vec::new();
+            if let Some(mut p) = pipe {
+                let _ = p.read_to_end(&mut buf);
+            }
+            buf
+        })
+    };
+    let out_reader = drain(child.stdout.take().map(|p| Box::new(p) as _));
+    let err_reader = drain(child.stderr.take().map(|p| Box::new(p) as _));
     let deadline = Instant::now() + Duration::from_secs(20);
-    loop {
+    let status = loop {
         match child.try_wait() {
-            Ok(Some(_)) => break,
+            Ok(Some(status)) => break status,
             Ok(None) if Instant::now() >= deadline => {
                 let _ = child.kill();
                 let _ = child.wait();
@@ -206,8 +218,12 @@ fn run_glab(bin: &Path, host: &str, dir: &Path, args: &[&str], stdin: Option<&st
             Ok(None) => std::thread::sleep(Duration::from_millis(25)),
             Err(_) => return Err("glab failed".into()),
         }
-    }
-    child.wait_with_output().map_err(|_| "glab failed".to_string())
+    };
+    Ok(Output {
+        status,
+        stdout: out_reader.join().unwrap_or_default(),
+        stderr: err_reader.join().unwrap_or_default(),
+    })
 }
 
 fn text_of(out: &Output) -> String {
@@ -287,11 +303,15 @@ fn login_at(bin: &Path, host: &str, dir: &Path, token: String) -> Result<ForgeSt
         "https",
         "--insecure-storage",
     ];
+    let had_login = has_stored_login(dir, host);
     let out = run_glab(bin, host, dir, &args, Some(&format!("{token}\n")))?;
     let text = redact(&text_of(&out), &token);
     drop(token); // shortcut: no zeroize crate, the String is only dropped
     if !out.status.success() {
-        let _ = logout_at(bin, host, dir);
+        // A rejected login leaves the previous working credential in place.
+        if !had_login {
+            let _ = logout_at(bin, host, dir);
+        }
         return Err(classify(&text, host).message);
     }
     let status = status_at(bin, host, dir);
@@ -318,15 +338,25 @@ fn logout_at(bin: &Path, host: &str, dir: &Path) -> Result<(), String> {
     ))
 }
 
+// Serializes glab calls that read or write the shared config.yml.
+static GLAB_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+fn glab_lock() -> std::sync::MutexGuard<'static, ()> {
+    GLAB_LOCK.lock().unwrap_or_else(|e| e.into_inner())
+}
+
 pub(crate) fn login(host: &str, token: &str) -> Result<ForgeStatus, String> {
+    let _guard = glab_lock();
     login_at(Path::new("glab"), host, &config_dir(), token.to_string())
 }
 
 pub(crate) fn status(host: &str) -> ForgeStatus {
+    let _guard = glab_lock();
     status_at(Path::new("glab"), host, &config_dir())
 }
 
 pub(crate) fn logout(host: &str) -> Result<(), String> {
+    let _guard = glab_lock();
     logout_at(Path::new("glab"), host, &config_dir())
 }
 
