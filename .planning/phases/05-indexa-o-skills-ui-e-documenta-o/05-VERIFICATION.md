@@ -42,3 +42,18 @@ None found. The 21 Vitest failures are the pre-existing baseline plus one test t
 
 ## Gaps
 None. Human verification covers the live-instance items above.
+
+## Final gate (2026-11-05, HEAD 3aaa8f1)
+
+| Check | Result |
+|-------|--------|
+| `cargo fmt --all --check && cargo clippy --workspace --all-targets --locked -- -D warnings` | clean |
+| Filtered Rust: `--lib gitlab` / `indexer` / `server::` / `clone_url` | 74 / 16 / 92 / pass |
+| Full `rusttest.sh` (postgres:17) | 735 passed, 0 failed, 15 ignored (baseline 734 + new `clone_url` test) |
+| `pnpm test` | 282 passed, 21 failed, 7 skipped. 20 = known baseline (Node 25 `localStorage.clear()` and CRLF-checkout `seo.test.ts`); 21st = new `ReviewSections.test.tsx > shows !n instead of #n on GitLab`, which fails only via the file's pre-existing `afterEach(localStorage.clear())` and passes with `--localstorage-file` |
+| `tsc --noEmit -p .` | clean |
+| `biome lint src` | clean (phase-5 files also pass `biome format` on LF content) |
+| `node scripts/check-file-sizes.mjs` | pass (312 files) |
+| `pnpm changelog:check` | valid |
+
+Code review: 2 passes; WR-01/WR-02 fixed (1d94867), 0 critical/warning left, 2 info (IN-01 ReviewDetail strings only reachable with verdicts, IN-02 stale comments). UI audit: 21/24, sign-out and concurrency copy routed through forge terms (559e088). Human checks: see 05-HUMAN-UAT.md.
