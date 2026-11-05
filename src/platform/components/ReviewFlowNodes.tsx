@@ -66,7 +66,9 @@ function ReviewControlNode({ data }: NodeProps<ReviewFlowNode>) {
         type="button"
         className="nodrag nopan"
         aria-label={control.label}
-        title={control.disabled && !control.busy ? `${control.label} unavailable for this ${terms.short}` : control.label}
+        title={
+          control.disabled && !control.busy ? `${control.label} unavailable for this ${terms.short}` : control.label
+        }
         disabled={control.disabled || control.busy}
         aria-busy={control.busy}
         onClick={(event) => {
@@ -256,7 +258,10 @@ export function ContextPhaseDetails({ context }: { context: ReviewContextPlan })
               `Base synchronization: reviews only affected files against the current ${terms.short} base; unchanged files reuse verified coverage.`,
             ]
           : context.incremental
-            ? ["Incremental review", `Incremental review: selects the ${terms.short}-owned changes since the previous review.`]
+            ? [
+                "Incremental review",
+                `Incremental review: selects the ${terms.short}-owned changes since the previous review.`,
+              ]
             : ["Full review", `Full review: selects the ${terms.short} diff against its immediate base.`];
   const short = (sha?: string | null) => sha?.slice(0, 12) ?? "Unavailable";
   const groups: ContextFileGroup[] = [

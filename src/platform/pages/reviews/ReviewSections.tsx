@@ -192,7 +192,8 @@ export function ReviewSections({
                       </div>
                       <div className="review-process-item-meta mt-0.5 flex items-center gap-2">
                         <span className="review-process-item-title min-w-0 flex-1 truncate text-caption text-fg-subtle">
-                          {card.repoFullName.split("/").pop()} <span className="tabular-nums">{terms.ref(card.number)}</span>
+                          {card.repoFullName.split("/").pop()}{" "}
+                          <span className="tabular-nums">{terms.ref(card.number)}</span>
                         </span>
                         {attentionPrIds.has(card.id) && (
                           <AlertTriangle className="size-3.5 flex-none text-warning" aria-label="Needs attention" />

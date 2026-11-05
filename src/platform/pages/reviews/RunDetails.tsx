@@ -54,7 +54,8 @@ export function UsageView({ run, usage }: { run: ReviewRun; usage: UsageStats | 
       {usage && usage.runCount > 1 && (
         <div className="mt-3 flex justify-between border-t border-line pt-3 text-xs font-semibold text-fg-muted">
           <span>
-            {terms.short} total ({usage.runCount} runs) · <b className="text-fg">{formatFlowTokens(totalTokens(usage))}</b>
+            {terms.short} total ({usage.runCount} runs) ·{" "}
+            <b className="text-fg">{formatFlowTokens(totalTokens(usage))}</b>
           </span>
           <span>{tokenSplit(usage)}</span>
         </div>
@@ -154,7 +155,8 @@ export function ContextView({ context }: { context: ReviewContextPlan }) {
             </>
           ) : (
             <>
-              Full {terms.short} vs base: <code>{shortSha(context.baseSha)}</code> → <code>{shortSha(context.headSha)}</code>.
+              Full {terms.short} vs base: <code>{shortSha(context.baseSha)}</code> →{" "}
+              <code>{shortSha(context.headSha)}</code>.
             </>
           )}
         </p>
