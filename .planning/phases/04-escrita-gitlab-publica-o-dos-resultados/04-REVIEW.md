@@ -2,6 +2,7 @@
 phase: 04-escrita-gitlab-publica-o-dos-resultados
 reviewed: 2026-11-05T00:00:00Z
 depth: standard
+iteration: 2
 files_reviewed: 22
 files_reviewed_list:
   - backend/src/forge/mod.rs
@@ -27,141 +28,154 @@ files_reviewed_list:
   - backend/src/server/status_comments_tests.rs
   - changelog.d/feat-gitlab-connection.md
 findings:
-  critical: 2
-  warning: 4
-  info: 5
+  critical: 0
+  warning: 3
+  info: 8
   total: 11
 status: issues_found
 ---
 
-# Phase 4: Code Review Report
+# Phase 4: Code Review Report (re-review after fixes)
 
 **Reviewed:** 2026-11-05
 **Depth:** standard
-**Files Reviewed:** 22
+**Files Reviewed:** 22 (focus: `git diff 86fa332..HEAD`, fix commits 2cc0f72..6039326)
 **Status:** issues_found
 
 ## Narrative Findings (AI reviewer)
 
 ## Summary
 
-Reviewed the phase-4 diff (`eaaffee..HEAD`): the forge dispatch seam, the GitLab write layer (`write.rs`), notes and status notes (`notes.rs`), the diff line map (`diffs.rs`), the publisher (`publish.rs`), the body sanitizer (`sanitize.rs`), and the server changes that turn on GitLab publication and acknowledgements.
+This pass checked the six fixes from the first review (CR-01, CR-02, WR-01..WR-04) for correctness and regressions.
 
-What holds up:
-- No token reaches argv, logs or error strings. Bodies go through a 0600 `--input` file, and error text is fixed or redacted.
-- No code path approves, requests changes on or merges an MR. `payload["event"]` is never read, and `approve_post`/`request_changes` are rejected over HTTP.
-- The GitHub flow does not regress. `StatusCommentApi::edit` defaults to `Ok(false)`, so GitHub keeps post-then-delete. The `delete` signature change is mechanical.
-- Retrying a run never posts a second inline discussion. Fingerprint dedupe against `list_notes` fails closed.
+**Verified fixed:**
+- **CR-02.** The part marker `<!-- ocr-review-part:v1 run=<id> head=<sha> -->` is built the same way on both sides:
+  - Publisher side: `run=` token of `review_post_marker`, plus `payload.commit_id`, which is `run.head_sha` (`publication.rs:1246`).
+  - Dedupe side: `run.id` plus `run.head_sha` (`publication.rs:1326`).
+  - The marker sits on its own line, so the sanitizer leaves it alone, and the fallback and PUT bodies carry it too.
+  - On a retry, this run's own notes are left out of `existing_ocr_comments`, so `only_duplicates` stays false and the summary is built from the full list. Inline writes that already landed are still skipped by fingerprint in `post_review_at`. Publication stays idempotent and posts no duplicate notes.
+- **WR-01.** `check_head` now runs before every inline write.
+- **WR-02.** `latest_version` polls `/versions` 4 times, waiting 1, 2 and 4 s, and honours cancel. The message no longer promises a retry.
+- **WR-03.** The status is read only from stderr, and only from glab's `HTTP NNN` suffix or a status that leads a line. Stdout and ids never count. A POST that gets a 5xx is still not retried.
+- **WR-04.** `own_note_with_marker` filters by `GET /user`, both in `find_review_id_by_marker_at`/`upsert` and in the publisher's `existing_summary`. If `/user` fails, nothing is written (fail-closed). If the failure happens during reconcile, the run stays locked.
 
-What is wrong:
-1. The sanitizer that should stop model text from triggering mentions and references can be bypassed in several easy ways.
-2. GitLab publication is not atomic. When it fails partway, the GitHub-shaped dedupe in `finish_review_post` on the retry drops the summary note for good, or posts a summary that counts only the remaining findings.
-3. Smaller problems: the head check does not cover the inline loop, an error message promises a retry that never happens, HTTP status detection by token matching is fragile, and marker lookups match notes from any author.
+**Invariants hold:**
+- **GitHub flow unchanged.** `forge::dedupe_review_comments` drops `run_id`/`head_sha` on the GitHub arm, and it has a single caller.
+- **No token exposure.** Status parsing never logs stderr, and the log line prints only the `classify` code.
+- **Never approves or merges.** `payload["event"]` is still never read.
+- **Fail-closed.** `list_notes` failures abort before any write.
 
-## Critical Issues
+**CR-01 is mostly fixed, with gaps.**
+- Closed: the five bypasses from the first review, the `@all` mention and the quick-action vectors.
+- Still open: two gaps in the "no applicable suggestions / no references" promise (WR-01, WR-03 below).
+- New: a link-corruption regression introduced by the narrower URL exemption (WR-02 below).
 
-### CR-01: The sanitizer can be bypassed: model text can still @mention users (including `@all`) and create cross-references
-
-**File:** `backend/src/gitlab/sanitize.rs:13-15, 30-45, 61-74, 89-93`
-**Issue:** The changelog (`changelog.d/feat-gitlab-connection.md:715`) and the module doc promise that model text "cannot trigger quick actions, mentions or references". Model text comes from a prompt that includes attacker-controlled MR content, and it gets around the sanitizer in at least five ways:
-
-1. **Marker-line exemption.** Any line that starts with `<!--` is copied verbatim (lines 90-93). `<!-- -->@all please look` renders as a live `@all` mention, because GitLab strips the comment and keeps the rest of the line.
-2. **Unbalanced backticks.** `neutralize_line` splits on `` ` `` and treats every odd segment as code (lines 63-71). With an unmatched backtick, as in ``Use ` to quote @all``, the backtick renders literally, but ` to quote @all` is skipped, so the mention fires. A code span that opens on one line and closes on the next has the same flaw: everything after the closing backtick on the second line is skipped.
-3. **URL tokens.** Any whitespace-delimited token that contains `://` is copied untouched (lines 31-34). `[docs](https://x.y)@all` and `https://a/b,@alice` keep their mentions, because GitLab only needs a non-word character before `@`.
-4. **Cross-project references.** A sigil right after an alphanumeric character is never neutralized (line 39), so `group/project#12` and `project!3` render as references. They create "mentioned in" system notes on the target issue or MR. Quoted label and milestone references (`~"bug fix"`, `%"v1.0"`) also pass, because the next character is `"`.
-5. **Fence-state drift.** An open fence in the sanitizer skips neutralization (line 95). Any construct where the sanitizer thinks a fence is open but GitLab does not, such as ```` ``` ```` inside an HTML block like `<div>`, leaves the following lines live.
-
-This breaks the phase's stated security control against prompt-injected output.
-
-**Fix:** Do not exempt whole lines or tokens. Neutralize every non-code text run, and treat only spans GitLab itself treats as code as code:
-```rust
-// 1) marker exemption: only lines that are exactly an OCR marker
-fn is_marker(line: &str) -> bool {
-    let t = line.trim();
-    t.starts_with("<!-- ocr") && t.ends_with("-->") && t.matches("-->").count() == 1
-}
-// 2) inline code: only balanced backtick runs (same length open/close) on the line; an
-//    unmatched backtick is plain text and its segment must be neutralized
-// 3) URLs: neutralize sigils that follow a non-URL char even inside a "://" token
-//    (or neutralize every sigil after ')' ',' etc.), keep only the URL span itself
-// 4) insert ZWSP before '#', '!', '&', '%', '~', '$' when followed by an alnum or '"',
-//    regardless of the preceding character (covers `group/project#12`, `~"label"`)
-```
-Add regression tests for each of these inputs: `<!-- -->@all`, ``a ` @all``, `[x](https://h)@all`, `g/p#1`, `~"x y"`.
-
-### CR-02: A partial GitLab publication permanently loses the summary note (or posts a wrong one) and records misleading state
-
-**File:** `backend/src/gitlab/publish.rs:103-139` (interacting with `backend/src/server/publication.rs:1370-1372, 1335-1337, 1012, 1063-1067`)
-**Issue:** GitHub creates the review in one atomic call. `post_review_at` instead posts N inline discussions and then the summary note last. POST 5xx responses are never retried (`write.rs:247`). If the summary POST (or any later inline POST) fails, `publish_review_with_recovery` finds no summary marker, calls `reset_review_posting`, and the run goes back to awaiting action, even though some or all findings are already on the MR. On the retry, whether automatic, manual Comment, or startup reconcile, `compose_review_post` dedupes against the notes now on GitLab:
-- **All inline comments were posted before the failure:** every comment is suppressed, so `only_duplicates` is true and the body is empty (`publication.rs:1370-1372`). `should_post` becomes false (`1335-1337`), so the summary note (including suggestions when Post suggestions is on) is never posted. The run is finalized with "Findings already posted by another OpenCodeReview run" (`1063-1067`), which is false: they were posted by this run.
-- **Some inline comments were posted:** the generated summary table (`posted_findings_review_body`) is built from the remaining comments only, so the counts and rows under-report the review.
-- **Meanwhile, if the user picks Skip or Mark reviewed** after the failure, local state says nothing was published while findings sit on the MR.
-
-**Fix:** Make the retry aware of this run's own partial publication. When an inline comment is suppressed because a note from this run already carries its fingerprint, keep it in the summary input, and post the summary whenever this run's summary marker is missing. For example, have `post_review_at` receive the full validated comment list (pre-dedupe) for the summary and dedupe only for the inline writes. Alternatively, build the summary from `annotated_comments_json` (statuses `new` + `duplicate_suppressed`) instead of `post_comments`. At minimum, on GitLab do not treat `only_duplicates` as "nothing to post" while `find_review_id_by_marker(post_marker)` returns `None`.
+None of these reaches BLOCKER level: none sends a notification or performs a write action.
 
 ## Warnings
 
-### WR-01: The head check does not cover the inline loop, so findings are posted against a superseded head
+### WR-01: `suggestion` fences nested in a blockquote or list item still produce applicable GitLab suggestions
 
-**File:** `backend/src/gitlab/publish.rs:81, 103-131, 137`
-**Issue:** `check_head` runs once before the loop and once before the summary. A push during the loop, which can be long with N sequential `glab` calls each allowed up to 120 s, lets every remaining inline discussion post against the old `head_sha`. GitLab accepts these as outdated diff notes. Only the summary is aborted. The changelog says "a push after the review aborts publication" (`changelog.d/feat-gitlab-connection.md:714`), which is not what happens.
-**Fix:** Re-run `check_head` (or at least a cheap `mr.sha` fetch) before each inline write, or every few writes, and stop as soon as it changes. Otherwise, reword the changelog to say that a push aborts the summary, not the inline comments.
+**File:** `backend/src/gitlab/sanitize.rs:30-40, 128-135`
+**Issue:** `defuse_suggestion` relies on `fence_of`, which only recognises a fence that starts the line, after up to 3 spaces. CommonMark also opens fenced code blocks inside containers, so these inputs still render a `suggestion` code block on a DiffNote:
+- `> ```suggestion`
+- `- ```suggestion` / `1. ```suggestion`
+- A fence indented 4 or more spaces under a list item, which `fence_of` rejects because `indent > 3`
 
-### WR-02: The PENDING error promises a retry that never happens
-
-**File:** `backend/src/gitlab/publish.rs:14-15, 90-92`
-**Issue:** When `versions[0].head_commit_sha` lags behind the head, publication fails with "...publication will be retried." Nothing retries it. `handle_completed_review` (`publication.rs:743-759`) sets the lane to `ready` with "Auto-post failed: ...", and `publish_review_with_recovery` resets the run. The user is told to wait for something that never comes.
-**Fix:** Either retry in place (poll `/versions` a few times with backoff before failing; GitLab usually catches up within seconds), or change the text to an actionable one: "GitLab has not finished processing the latest push; publish again in a moment."
-
-### WR-03: HTTP status detection by token/substring match on combined stdout+stderr can misclassify errors and cause duplicate notes
-
-**File:** `backend/src/gitlab/write.rs:177-180, 228-247` (with `gitlab/auth.rs:106-108`)
-**Issue:** `text` is `text_of(&out)`, which is stdout plus stderr and includes the response body. `classify` treats any substring `401` as unauthorized: a note id, project id or iid containing `401` turns into "token invalid". `has_status` matches any standalone `400`/`404`/`409`/`422`/`5xx` token. If glab echoes the request URL or path in its error output, an MR with iid 400, 409 or 422 turns any failure, including a 5xx where the write may have landed, into `Rejected`. `post_comment` (`publish.rs:67`) then posts a fallback general note, which duplicates a discussion that may already exist. Likewise, iid 404 turns 5xx errors into `NotFound`, and `delete_note` treats `NotFound` as success.
-**Fix:** Parse the status explicitly instead of scanning free text. For example, use `glab api -i`/`--include`, read the `HTTP/x NNN` status line from stdout, and classify on that number alone. If that is not possible, match only the `(HTTP NNN)` suffix glab prints on stderr, and never scan stdout.
-
-### WR-04: Marker and summary lookups match notes from any author
-
-**File:** `backend/src/gitlab/notes.rs:196-206, 219-222`; `backend/src/gitlab/publish.rs:99-100`
-**Issue:** `find_review_id_by_marker_at`, `upsert_issue_comment_by_marker_at` and `existing_summary` accept the first note containing the marker, whoever wrote it. The PR-summary marker is static and predictable (`pr_summary_marker(full_name, number)`). Any participant who posts a note containing it makes `upsert` try to PUT someone else's note, which fails with 403 on every attempt, so the PR summary is permanently broken for that MR. Review markers are visible in the note source of earlier runs. A planted marker for a future run makes `existing_summary` skip the summary, and makes reconciliation accept a note OpenCodeReview never wrote as its review id. Status comments already filter by `publisher_id`; these lookups do not. The GitHub counterpart has the same gap, but on GitLab the consequence is a write to a foreign note.
-**Fix:** Filter by the authenticated user in every GitLab marker lookup:
+GitLab finds suggestion blocks anywhere in the rendered note. A prompt-injected finding can therefore offer a one-click "Apply suggestion" that writes attacker-chosen code. The module doc (line 1) and the fix report say suggestions are defused "whatever the fence state", but they are not. This gap existed before the fix, but CR-01's fix explicitly claims to cover it.
+**Fix:** Defuse the info string wherever a fence run appears in the line, not only at the line start:
 ```rust
-let me = GitLabStatusComments(ctx.clone()).publisher_id()?; // or pass it in
-list_notes(ctx, full_name, number)?.into_iter()
-    .filter(|n| n.author.id == me)
-    .find(|n| n.body.contains(marker))
+fn defuse_suggestion(line: String) -> String {
+    // Any ``` or ~~~ run (in a blockquote, list item or deep indent) followed by `suggestion` becomes `diff`.
+    let mut out = String::with_capacity(line.len());
+    let mut rest = line.as_str();
+    while let Some(i) = rest.find(|c| c == '`' || c == '~') {
+        let ch = rest[i..].chars().next().unwrap();
+        let run = rest[i..].chars().take_while(|c| *c == ch).count();
+        out.push_str(&rest[..i + run]);
+        rest = &rest[i + run..];
+        if run >= 3 && rest.trim_start().starts_with("suggestion") {
+            out.push_str("diff");
+            rest = "";
+        }
+    }
+    out.push_str(rest);
+    out
+}
 ```
+Add tests for `> ```suggestion`, `- ```suggestion` and `-   \n    ```suggestion`.
+
+### WR-02: The narrower URL exemption now writes zero-width spaces into valid links, which breaks them (regression)
+
+**File:** `backend/src/gitlab/sanitize.rs:10-12, 54, 95`
+**Issue:** `URL_END` ends the exempt span at `_`, `~`, `*`, `!`, `$`, `^`, `'` and `,`. GitLab, and GFM autolinking in general, keeps these characters inside an autolink when they are not trailing. Any sigil after one of them in the same URL is then treated as live, and a ZWSP is written inside the link, so the `href` changes. Before the fix, a `://` token was exempt as a whole, so this is new breakage. Examples:
+- `https://gl.example/acme_web/app/-/blob/abc/docs/Read%20Me.md` becomes `...Read%​20Me.md`. `%2` counts as a live milestone sigil because `2` is a word character.
+- `https://gl.example/acme_web/ui/-/tree/main/packages/@ui/button` becomes `.../@​ui/...`.
+- `https://h/x?a=1&2=b` and `https://h/a!1` get similar damage.
+
+Underscores are common in GitLab group and project paths, so model-written links to files with spaces, or to scoped-package directories, are broken in published notes. OCR's own commit links (`/-/commit/<hex>`) are not affected.
+**Fix:** Apply the strict end set only to the host part, and end the path part only at characters that really end an autolink:
+- Host part: refuse the exemption when the host contains `_` or a character that is not valid in a host.
+- Path part: end the span only at `<`, `` ` ``, `"`, `'`, `)`, `]`, `|` and `\`.
+- Trailing `?!.,:*_~` at the very end of the token can still be trimmed from the span.
+
+Add regression cases: `https://h/a_b/c%20d`, `https://h/a_b/@scope/x`, and keep `[x](https://h)@all`, `xhttps://h/@all` and `https://a/b,@alice` neutralised.
+
+### WR-03: Commit and URL references still get through, so the "no references" promise is still false
+
+**File:** `backend/src/gitlab/sanitize.rs:1, 73, 95`; `changelog.d/feat-gitlab-connection.md:17`
+**Issue:**
+- **Commit references.** The `@` rule skips any `@` preceded by an alphanumeric character, which keeps emails intact. That same rule leaves GitLab's cross-project commit reference `group/project@<7-40 hex>` (and `@sha...sha` ranges) live. Bare 7-40 hex SHAs are not touched either.
+- **URL references.** An exempt `http(s)` URL pointing to an issue, MR or commit on the same instance is also turned into a reference by GitLab's link-reference filters.
+- **Effect.** Both forms render as references and create "mentioned in" system notes on the target issue, MR or commit.
+
+Prompt-injected text can therefore still spam cross-reference notes onto arbitrary readable issues, MRs or commits. The module doc (line 1: "no mentions or cross references") and the changelog (line 17: "cannot trigger quick actions, mentions or references") promise otherwise. The mention and quick-action vectors are closed, so this is a WARNING, not a BLOCKER.
+**Fix:** Neutralise the `@` in `<path>@<hex{7,}>`, so that an `@` preceded by an alphanumeric character and followed by 7 or more hex characters gets a ZWSP. Emails rarely have a 7-character hex local domain, so they survive. Reword the doc and the changelog to the guarantee the code actually gives, for example: "model text cannot trigger quick actions or mentions, and short-form references are neutralised". Full instance URLs to issues or MRs cannot be defused without breaking links.
 
 ## Info
 
-### IN-01: `queued_commit_url` duplicates `Forge::commit_url`, and the text still says "pull request" on GitLab
+### IN-01: Leftover from CR-02 (deferred): Skip or Mark reviewed after a partial GitLab publication leaves local state saying nothing was published
+
+**File:** `backend/src/server/publication.rs:1012-1030`
+**Issue:** The fix report lists this as not addressed because it needs a DB/state change. Some inline findings can be live on the MR while the run is reset to awaiting action. Carried forward so it stays visible.
+**Fix:** Track the number of inline writes per run, or warn in the UI before Skip/Mark reviewed when this run's part marker exists on the MR.
+
+### IN-02: An aborted inline loop leaves discussions with no summary, and later runs treat them as another run's duplicates
+
+**File:** `backend/src/gitlab/publish.rs:163`
+**Issue:** When `check_head` fails mid-loop, which is now more likely, the run is reset and its notes stay without a summary. The run for the new head suppresses matching findings as "already posted by another OpenCodeReview run". If every finding matches, it posts no summary, so the MR ends up with findings and no summary anywhere. This cannot happen on GitHub, where the review is posted atomically. It is not new: before the fix, the loop always ran to the end and only the summary was aborted.
+**Fix:** Optionally, have `dedupe_review_comments` count only notes from runs whose summary marker exists.
+
+### IN-03: `http_status` accepts three digits followed by a letter
+
+**File:** `backend/src/gitlab/write.rs:29-32`
+**Issue:** `code` takes leading ASCII digits and does not require a boundary after them. A stderr line starting with `409c2e...` or `400abc` parses as 409/400, which means Rejected and therefore a fallback note. This is unlikely with real glab output.
+**Fix:** Require that the next character is not alphanumeric: `s[3..].chars().next().is_none_or(|c| !c.is_ascii_alphanumeric())`.
+
+### IN-04 (carried, was IN-01): `queued_commit_url` duplicates `Forge::commit_url`, and the text says "pull request" on GitLab
 
 **File:** `backend/src/server/comment_activation.rs:7-12, 18`
-**Issue:** `Forge::commit_url` / `gitlab_commit_url` (`forge/mod.rs:301-305`) already build this URL. The acknowledgement heading reads "OpenCodeReview is reviewing this pull request" on a merge request.
-**Fix:** Reuse `forge::current().commit_url(...)`, or fix the GitHub branch of `commit_url` to use `gh_host()` and reuse that. Pick "merge request" or "pull request" from the forge.
+**Fix:** Reuse `forge::current().commit_url(...)`, and pick the "merge request" or "pull request" wording from the forge.
 
-### IN-02: `diffs_at` hard-codes the backoff and rebuilds the MR endpoint
+### IN-05 (carried, was IN-02): `diffs_at` hard-codes the backoff and rebuilds the MR endpoint
 
 **File:** `backend/src/gitlab/diffs.rs:361, 369`
-**Issue:** It builds the endpoint with `format!` instead of `mrs::mr_endpoint`, and it ignores `Ctx::backoff_ms` (fixed at 1000). The publisher's injected backoff therefore does not apply to this call.
-**Fix:** Take `&Ctx` (or `backoff_ms`) and use `super::mrs::mr_endpoint(full_name, number)`.
+**Fix:** Pass `&Ctx` (or `backoff_ms`) and use `mrs::mr_endpoint`.
 
-### IN-03: `forge::GitHubStatusComments` now dispatches to GitLab
+### IN-06 (carried, was IN-03): `forge::GitHubStatusComments` also dispatches to GitLab
 
 **File:** `backend/src/forge/mod.rs:226-227`
-**Issue:** The name says GitHub, but the type also dispatches to GitLab, which makes call sites misleading.
-**Fix:** Rename it to `ForgeStatusComments` (four call sites).
+**Fix:** Rename it to `ForgeStatusComments`.
 
-### IN-04: GitLab fallback notes have no path or line, so the cross-push dedupe does not match them
+### IN-07 (carried, was IN-04): GitLab fallback notes have no path or line, so cross-push dedupe does not match them
 
-**File:** `backend/src/gitlab/notes.rs:242-251`
-**Issue:** General notes, meaning fallback findings and the summary that carries relocated findings, map to `path: ""` and `line: 0`, so `already_posted`'s "same title in the same file" rule never matches them. Matching falls back to the fingerprint, which includes the line, so a finding first posted as a fallback note is posted again after a push that shifts its line.
-**Fix:** Parse the `` `path:line` `` prefix that `fallback_body` writes, and use it as the path and line for general notes.
+**File:** `backend/src/gitlab/notes.rs:258-268`
+**Fix:** Parse the `` `path:line` `` prefix that `fallback_body` writes, and use it for general notes.
 
-### IN-05: Diff parsing fails as a whole on `"diff": null`, and `/diffs` needs GitLab 15.7 or later
+### IN-08 (carried, was IN-05): `"diff": null` fails the whole diff parse, and `/diffs` needs GitLab 15.7 or later
 
 **File:** `backend/src/gitlab/diffs.rs:270-274, 361`
-**Issue:** `#[serde(default)] diff: String` handles a missing field but not `null`, so one such entry fails the whole `parse_pages` call. Every publication would fail, and anchor checks would be silently skipped. `GET /merge_requests/:iid/diffs` also does not exist before GitLab 15.7, so publication always fails on older self-hosted instances, and nothing documents that.
-**Fix:** Use `diff: Option<String>` with `unwrap_or_default()`. Document the minimum GitLab version, or fall back to `/changes`.
+**Fix:** Use `diff: Option<String>` with `unwrap_or_default()`, and document the minimum GitLab version.
 
 ---
 
