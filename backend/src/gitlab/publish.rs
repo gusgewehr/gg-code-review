@@ -12,7 +12,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 const SUMMARY_MARKER: &str = "<!-- ocr-review-post:v1";
 const CHANGED: &str = "The merge request changed after the review (new push or closed); publication aborted.";
 const PENDING: &str =
-    "GitLab has not finished processing the latest push for this merge request; publication will be retried.";
+    "GitLab has not finished processing the latest push for this merge request; publish again in a moment.";
 
 /// Tags every inline note of one run, so a retry after a partial publication can tell its own notes apart.
 pub(crate) fn review_part_marker(run_id: &str, head_sha: &str) -> String {
@@ -29,6 +29,31 @@ fn check_head(ctx: &Ctx, full_name: &str, number: i64, commit_id: &str, cancel: 
         return Err(CHANGED.into());
     }
     Ok(())
+}
+
+/// GitLab builds the MR version of a push asynchronously, so wait briefly for it to reach the reviewed head.
+fn latest_version(
+    ctx: &Ctx,
+    full_name: &str,
+    number: i64,
+    commit_id: &str,
+    cancel: &AtomicBool,
+) -> Result<Value, String> {
+    let endpoint = format!("{}/versions", mr_path(full_name, number));
+    for attempt in 0..4u32 {
+        if attempt > 0 {
+            std::thread::sleep(std::time::Duration::from_millis(ctx.backoff_ms << (attempt - 1)));
+        }
+        if cancel.load(Ordering::SeqCst) {
+            return Err("cancelled".into());
+        }
+        let bytes = ctx.get(&endpoint, false, "merge request versions")?;
+        let versions: Value = serde_json::from_slice(&bytes).map_err(|_| super::api::UNEXPECTED.to_string())?;
+        if versions[0]["head_commit_sha"].as_str() == Some(commit_id) {
+            return Ok(versions[0].clone());
+        }
+    }
+    Err(PENDING.into())
 }
 
 /// Fingerprint line first (the dedupe key), then where the finding belongs, then the original text.
@@ -85,16 +110,7 @@ pub(super) fn post_review_at(
     let commit_id = payload["commit_id"].as_str().unwrap_or_default();
     check_head(ctx, full_name, number, commit_id, cancel)?;
 
-    let versions = ctx.get(
-        &format!("{}/versions", mr_path(full_name, number)),
-        false,
-        "merge request versions",
-    )?;
-    let versions: Value = serde_json::from_slice(&versions).map_err(|_| super::api::UNEXPECTED.to_string())?;
-    let latest = &versions[0];
-    if latest["head_commit_sha"].as_str() != Some(commit_id) {
-        return Err(PENDING.into());
-    }
+    let latest = latest_version(ctx, full_name, number, commit_id, cancel)?;
     let sha = |k: &str| latest[k].as_str().unwrap_or_default().to_string();
     let (base_sha, start_sha) = (sha("base_commit_sha"), sha("start_commit_sha"));
 

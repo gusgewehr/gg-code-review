@@ -226,9 +226,22 @@ fn stale_head_aborts_before_any_write() {
         if name == "p-sha" {
             assert!(err.contains("changed after the review"));
         }
+        if name == "p-ver" {
+            assert!(err.contains("publish again in a moment"));
+        }
         assert!(writes(&dir).is_empty(), "{name}");
         cleanup(&dir);
     }
+}
+
+#[test]
+fn lagging_versions_are_polled_until_they_reach_the_head() {
+    let extra = r#"*versions*) n=$(cat "$d/vn" 2>/dev/null || echo 0); n=$((n+1)); echo $n > "$d/vn"; if [ "$n" -ge 3 ]; then cat "$d/versions.json"; else echo '[{"head_commit_sha":"old"}]'; fi;;"#;
+    let (dir, ctx) = fixture("p-lag", extra);
+    assert_eq!(run(&ctx, &payload(vec![comment(1, "a.rs", 2, "RIGHT")])), Ok(Some(900)));
+    assert_eq!(calls(&dir).iter().filter(|c| c.contains("versions")).count(), 3);
+    assert_eq!(writes(&dir).len(), 2);
+    cleanup(&dir);
 }
 
 #[test]
