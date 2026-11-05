@@ -95,3 +95,20 @@ _Verifier: Claude (gsd-verifier)_
 - The glab `RUN` block was copied verbatim into a throwaway Dockerfile on `debian:bookworm-slim` and built (amd64): `/tmp/glab.tar.gz: OK`, `glab 1.128.0 (519ea19f7)`. The arm64 checksum was not exercised by a build.
 - REQUIREMENTS.md updated (6a2511a).
 - Status is now `human_needed`: only the live-GitLab items above remain.
+
+## Final gate (2026-11-05, HEAD 5acfa85)
+
+| Check | Result |
+|-------|--------|
+| `cargo fmt --all --check` + `cargo clippy --workspace --all-targets --locked -- -D warnings` | pass (post-fix tree) |
+| `rusttest.sh "--lib forge"` | 7 passed, 0 failed (post-fix tree) |
+| `rusttest.sh "--lib gitlab"` | 12 passed, 0 failed (post-fix tree) |
+| `rusttest.sh` (full suite) | 666 passed, 0 failed, 15 ignored, on the tree before the code-review fixes (7e14cd0, all 02-01..02-04 code). The post-fix re-run was killed by host memory pressure and not restarted; the fixes (aaf8a0b, a3fe0f9) only touch `gitlab/auth.rs` and GitLab-only URL helpers in `forge/mod.rs`, which the forge/gitlab runs above cover. |
+| `pnpm test` | 20 failed / 273 passed / 7 skipped = baseline. All failures are in files phase 2 did not touch (localStorage.clear under Node 25, plus `scripts/site/seo.test.ts` on the CRLF Windows checkout). The phase-2 test files (SettingsPage, GitLabConnection) pass. |
+| `tsc --noEmit -p .` | pass |
+| `biome check src` | lint clean. Format reports CRLF-only diffs repo-wide (Windows autocrlf checkout, pre-existing); the committed LF blobs of all 6 phase-2 frontend files are format-clean. |
+| `node scripts/check-file-sizes.mjs` | pass (296 files) |
+| `python docker/test-gitlab-isolation.py` | pass (5 checks, incl. new Dockerfile continuation check) |
+| glab install step | built in isolation on `debian:bookworm-slim` (amd64): checksum OK, `glab 1.128.0`. Full `docker build -f docker/Dockerfile .` not run (Rust build stage, memory). arm64 not exercised. |
+
+Code review: 02-REVIEW.md (0 critical, 6 warning, 3 info). Fixed WR-01, WR-02, WR-04, WR-05, WR-06 (02-REVIEW-FIX.md). WR-03 skipped pending spike data. Info items left open.
