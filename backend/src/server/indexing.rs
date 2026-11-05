@@ -436,7 +436,7 @@ pub(crate) fn ensure_repo_checkout_cancellable(
     // Clone over HTTPS with the gh token rather than `gh repo clone`, which
     // honours the host's `git_protocol` (often ssh) and would need SSH keys
     // that aren't mounted into the container.
-    let url = format!("https://{}/{}.git", crate::forge::gh_host(), repo.full_name);
+    let url = clone_url(&crate::forge::gh_host(), &repo.full_name);
     let parent = path.parent().ok_or("Repository parent is missing")?;
     let stamp = SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -458,4 +458,8 @@ pub(crate) fn ensure_repo_checkout_cancellable(
         return Err(error.to_string());
     }
     Ok(path)
+}
+
+pub(crate) fn clone_url(host: &str, full_name: &str) -> String {
+    format!("https://{host}/{full_name}.git")
 }

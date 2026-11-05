@@ -288,9 +288,7 @@ pub fn run(mut config: ServerConfig) -> Result<(), String> {
     cleanup_runtime_artifacts();
 
     let state = Arc::new(ServerState::new(config.clone()));
-    let github = crate::forge::current() == crate::forge::Forge::GitHub;
-    // GitLab indexing lands in Phase 5
-    if config.auto_reindex && github {
+    if config.auto_reindex {
         start_reindex_worker(state.clone());
     }
     start_instance_heartbeat(config.db.clone(), instance);

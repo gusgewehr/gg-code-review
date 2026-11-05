@@ -1567,3 +1567,13 @@ fn nested_workspace_login_is_percent_decoded_in_routes() {
     let repos = route_dynamic(&decoded, &state).unwrap();
     assert_eq!(repos[0]["fullName"], "g/sub/proj");
 }
+
+#[test]
+fn clone_url_uses_forge_host_and_full_path() {
+    use super::indexing::clone_url;
+    assert_eq!(clone_url("github.com", "octo/repo"), "https://github.com/octo/repo.git");
+    assert_eq!(
+        clone_url("gitlab.example.com", "group/sub/proj"),
+        "https://gitlab.example.com/group/sub/proj.git"
+    );
+}
