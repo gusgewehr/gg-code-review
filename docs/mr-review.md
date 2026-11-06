@@ -28,8 +28,8 @@ export OCR_GITLAB_CA_FILE=~/corp-ca.pem   # optional
 scripts/review-mr.sh https://gitlab.example.com/group/sub/project/-/merge_requests/42
 ```
 
-The first run builds the images (`opencodereview-server:mr`, then `opencodereview-mr:local`);
-set `OCR_MR_REBUILD=1` to rebuild after pulling changes. The report is printed and saved under
+The first run builds the images (`opencodereview-server:mr`, then `opencodereview-mr:local`), and
+so does the first run after a `git pull` that moved the checkout; `OCR_MR_REBUILD=1` forces it. The report is printed and saved under
 `./reviews/mr-42/` together with `ocr-findings.json` (full JSON) and `findings.json`.
 
 Export tokens in your shell session (or read them from a password manager); don't put them in

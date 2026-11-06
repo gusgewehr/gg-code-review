@@ -11,7 +11,7 @@
 # runner, as UID 10001, under the tool guard.
 #
 # `ocr-bench-entrypoint mr <merge request URL>` instead reviews one GitLab merge request fetched by
-# ocr-bench itself and writes /output/mr-<iid>/review.md (docs/mr-review.md).
+# ocr-bench itself and writes /work/out/mr-<iid>/review.md (docs/mr-review.md).
 set -eu
 
 [ $# -gt 0 ] || set -- reviewbench

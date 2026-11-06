@@ -85,6 +85,7 @@ Items acknowledged and deferred at milestone close on 2026-11-05:
 |----|------|------|---------|--------|
 | 261105-uy9 | On-demand GitLab MR reviewer (`ocr-bench mr <url>`), branch `feat/mr-reviewer` stripped to the review pipeline | 2026-11-05 | 01386e1, de9c58a, 529e407 | complete; real-MR run pending with the user |
 | fast | `review-mr.sh` accepts `GITLAB_PASSWORD` (glpat- token) as the GitLab token | 2026-11-06 | 2565e0a | complete |
+| fast | MR report moved to `/work/out` (runner wipes `/output` between stages); script rebuilds the image when the checkout commit changes | 2026-11-06 | (this commit) | complete |
 
 ## Session Continuity
 

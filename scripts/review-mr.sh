@@ -19,12 +19,16 @@ export GITLAB_TOKEN
 image=${OCR_MR_IMAGE:-opencodereview-mr:local}
 root=$(cd "$(dirname "$0")/.." && pwd)
 
-if [ "${OCR_MR_REBUILD:-}" = 1 ] || ! docker image inspect "$image" >/dev/null 2>&1; then
+# Rebuild when the checkout moved since the image was built (a `git pull`), so it never runs stale code.
+commit=$(git -C "$root" rev-parse HEAD 2>/dev/null || echo unknown)
+built=$(docker image inspect -f '{{index .Config.Labels "ocr.commit"}}' "$image" 2>/dev/null || true)
+if [ "${OCR_MR_REBUILD:-}" = 1 ] || [ "$built" != "$commit" ]; then
   docker build -f "$root/docker/Dockerfile" -t opencodereview-server:mr "$root"
-  docker build -f "$root/docker/Dockerfile.bench" --build-arg OCR_RUNTIME_IMAGE=opencodereview-server:mr -t "$image" "$root"
+  docker build -f "$root/docker/Dockerfile.bench" --build-arg OCR_RUNTIME_IMAGE=opencodereview-server:mr \
+    --label "ocr.commit=$commit" -t "$image" "$root"
 fi
 
-set -- docker run --rm -e GITLAB_TOKEN -v "$(pwd)/reviews:/output"
+set -- docker run --rm -e GITLAB_TOKEN -v "$(pwd)/reviews:/work/out"
 if [ -n "${OCR_BENCH_CREDENTIAL_FILE:-}" ]; then
   set -- "$@" -v "$(realpath "$OCR_BENCH_CREDENTIAL_FILE"):/run/ocr-bench/credential:ro"
 else

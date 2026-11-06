@@ -13,6 +13,7 @@ use serde_json::{json, Value};
 
 const REPO: &str = "/work/repo";
 const PR_DIR: &str = "/work/pr";
+const OUT_DIR: &str = "/work/out";
 const DEFAULT_DEADLINE_SECS: &str = "3600";
 
 #[derive(Debug, PartialEq, Eq)]
@@ -88,7 +89,8 @@ pub fn run_from_env() -> Result<(), String> {
         "body": info["description"].as_str().unwrap_or_default(),
     });
     std::fs::write(Path::new(PR_DIR).join("pr.json"), pr_json.to_string()).map_err(|error| error.to_string())?;
-    let out_dir = Path::new("/output").join(format!("mr-{}", mr.iid));
+    // Under /work/out, which the runner keeps: it empties /output (its own) between stages.
+    let out_dir = Path::new(OUT_DIR).join(format!("mr-{}", mr.iid));
     std::fs::create_dir_all(&out_dir).map_err(|error| error.to_string())?;
 
     // The pipeline names a repository `owner/name`; a GitLab path can be deeper, so the groups
