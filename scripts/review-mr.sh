@@ -39,7 +39,7 @@ if [ -n "${OCR_GITLAB_CA_FILE:-}" ]; then
   set -- "$@" -v "$(realpath "$OCR_GITLAB_CA_FILE"):/run/ocr-ca/ca.crt:ro"
 fi
 for name in RB_CONFIG_PROVIDER RB_CONFIG_MODEL RB_CONFIG_EFFORT RB_CONFIG_MAX_FILES RB_CONFIG_FOCUS_FILES \
-  RB_CONFIG_SUGGESTIONS RB_CONFIG_DEADLINE_SECS; do
+  RB_CONFIG_SUGGESTIONS RB_CONFIG_DEADLINE_SECS RB_CONFIG_LANGUAGE; do
   if [ -n "$(printenv "$name" || true)" ]; then
     set -- "$@" -e "$name"
   fi

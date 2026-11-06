@@ -98,6 +98,7 @@ pub fn run_from_env() -> Result<(), String> {
     let (groups, project_name) = mr.project.rsplit_once('/').ok_or("Invalid project path")?;
     for (key, value) in [
         ("RB_CONFIG_SUGGESTIONS", "true"),
+        ("RB_CONFIG_LANGUAGE", "Brazilian Portuguese (pt-BR)"),
         ("RB_CONFIG_DEADLINE_SECS", DEFAULT_DEADLINE_SECS),
     ] {
         if std::env::var(key).unwrap_or_default().is_empty() {
@@ -230,7 +231,7 @@ fn fetch_repo(mr: &MrUrl, token: &str, target: &str, base: &str, head: &str) -> 
 pub(crate) fn render(url: &str, info: &Value, report: &Value) -> String {
     let text = |value: &Value| value.as_str().unwrap_or_default().trim().to_string();
     let mut out = format!(
-        "# Review of !{}: {}\n\n{}\n\n",
+        "# Revisão do !{}: {}\n\n{}\n\n",
         info["iid"].as_i64().unwrap_or_default(),
         text(&info["title"]),
         info["web_url"].as_str().unwrap_or(url)
@@ -238,7 +239,7 @@ pub(crate) fn render(url: &str, info: &Value, report: &Value) -> String {
     let findings = report["findings"].as_array().cloned().unwrap_or_default();
     let questions = report["questions"].as_array().cloned().unwrap_or_default();
     out.push_str(&format!(
-        "Status: **{}** · {} · {}s · {} findings, {} questions\n\n",
+        "Status: **{}** · {} · {}s · {} achados, {} perguntas\n\n",
         text(&report["status"]),
         text(&report["engine"]["label"]),
         report["durationMs"].as_i64().unwrap_or_default() / 1000,
@@ -246,14 +247,14 @@ pub(crate) fn render(url: &str, info: &Value, report: &Value) -> String {
         questions.len()
     ));
     if let Some(error) = report["error"].as_str() {
-        out.push_str(&format!("> Review error: {error}\n\n"));
+        out.push_str(&format!("> Erro da revisão: {error}\n\n"));
     }
     let summary = text(&report["summary"]);
     let (summary, _) = crate::review::split_suggestions(&summary);
     if !summary.trim().is_empty() {
-        out.push_str(&format!("## Summary\n\n{}\n\n", summary.trim()));
+        out.push_str(&format!("## Resumo\n\n{}\n\n", summary.trim()));
     }
-    for (heading, points) in [("Findings", &findings), ("Questions", &questions)] {
+    for (heading, points) in [("Achados", &findings), ("Perguntas", &questions)] {
         if points.is_empty() {
             continue;
         }
@@ -272,7 +273,7 @@ pub(crate) fn render(url: &str, info: &Value, report: &Value) -> String {
                 "### {}. `{}:{lines}` · {}\n\n",
                 index + 1,
                 text(&point["path"]),
-                text(&point["kind"])
+                kind_label(point["kind"].as_str().unwrap_or_default())
             ));
             let title = text(&point["title"]);
             if title.is_empty() {
@@ -288,15 +289,24 @@ pub(crate) fn render(url: &str, info: &Value, report: &Value) -> String {
             let action = text(&point["action"]);
             if !action.is_empty() {
                 let label = if point["kind"] == "question" {
-                    "To confirm"
+                    "A confirmar"
                 } else {
-                    "Suggested fix"
+                    "Correção sugerida"
                 };
                 out.push_str(&format!("**{label}:** {action}\n\n"));
             }
         }
     }
     out
+}
+
+fn kind_label(kind: &str) -> &str {
+    match kind {
+        "finding" => "achado",
+        "suggestion" => "sugestão",
+        "question" => "pergunta",
+        other => other,
+    }
 }
 
 #[cfg(test)]
@@ -344,14 +354,14 @@ mod tests {
             "questions": []
         });
         let markdown = render("u", &info, &report);
-        assert!(markdown.starts_with("# Review of !7: Add cache\n\nhttps://g/x/y/-/merge_requests/7"));
-        assert!(markdown.contains("**ok** · claude/opus/high · 61s · 2 findings, 0 questions"));
-        assert!(markdown.contains("## Summary\n\nTwo problems.\n\n"));
+        assert!(markdown.starts_with("# Revisão do !7: Add cache\n\nhttps://g/x/y/-/merge_requests/7"));
+        assert!(markdown.contains("**ok** · claude/opus/high · 61s · 2 achados, 0 perguntas"));
+        assert!(markdown.contains("## Resumo\n\nTwo problems.\n\n"));
         assert!(!markdown.contains("Suggested change"));
         assert!(markdown.contains(
-            "### 1. `src/a.rs:3-5` · finding\n\n**Cache never expires**\n\nEntries grow forever.\n\n**Suggested fix:** Add a TTL."
+            "### 1. `src/a.rs:3-5` · achado\n\n**Cache never expires**\n\nEntries grow forever.\n\n**Correção sugerida:** Add a TTL."
         ));
-        assert!(markdown.contains("### 2. `src/b.rs:9` · suggestion\n\nRaw comment"));
-        assert!(!markdown.contains("## Questions"));
+        assert!(markdown.contains("### 2. `src/b.rs:9` · sugestão\n\nRaw comment"));
+        assert!(!markdown.contains("## Perguntas"));
     }
 }

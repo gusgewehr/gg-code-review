@@ -182,7 +182,7 @@ pub(crate) fn review(
         last_reviewed_sha: None,
         force_full: true,
         reprocess: false,
-        skill_content: database.active_skill_content(),
+        skill_content: with_language(database.active_skill_content()),
         unresolved_review_head: None,
         unresolved_review_body: None,
         pr_title: pr.title.clone(),
@@ -239,6 +239,20 @@ pub(crate) fn review(
         output: result?,
         engine,
     })
+}
+
+/// The review skill with `RB_CONFIG_LANGUAGE` (such as `Brazilian Portuguese (pt-BR)`) as the
+/// language of the text the model writes. Code quotes stay exact, so validation is unaffected.
+fn with_language(skill: String) -> String {
+    match std::env::var("RB_CONFIG_LANGUAGE") {
+        Ok(language) if !language.trim().is_empty() => format!(
+            "{skill}\n\n## Output language\n\nWrite the title, detail and action of every finding, question and \
+             suggestion in {}. This is a rule for the content of the report fields, not a presentation one. Keep \
+             code, identifiers, file paths and evidence quotes exactly as they appear in the source.\n",
+            language.trim()
+        ),
+        _ => skill,
+    }
 }
 
 /// Whether a failed review is the run's setup (sign-in, usage limits), which the benchmark should

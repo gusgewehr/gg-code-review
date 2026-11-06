@@ -41,6 +41,7 @@ files in the repository or on the command line.
 |----------|---------|--------|
 | `RB_CONFIG_PROVIDER` | `claude` | `codex` to review with Codex; then set `OCR_BENCH_CREDENTIAL_FILE` to its `auth.json` |
 | `RB_CONFIG_MODEL`, `RB_CONFIG_EFFORT` | product defaults | Model and reasoning effort |
+| `RB_CONFIG_LANGUAGE` | `Brazilian Portuguese (pt-BR)` | Language of titles, explanations and fixes (code and quotes stay as they are), e.g. `English` |
 | `RB_CONFIG_SUGGESTIONS` | `true` | Lower-priority suggestions (tests, naming, duplication) besides findings |
 | `RB_CONFIG_MAX_FILES` | `800` | Larger merge requests are declined |
 | `RB_CONFIG_FOCUS_FILES` | `100` | Above this, the highest-priority files are reviewed and the rest listed |
