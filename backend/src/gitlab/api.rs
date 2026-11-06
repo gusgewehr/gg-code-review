@@ -11,7 +11,7 @@ pub(super) const TOKEN_MESSAGE: &str =
 pub(super) const UNEXPECTED: &str = "Unexpected GitLab response.";
 
 /// Percent-encodes everything outside the RFC 3986 unreserved set (project paths, branch names).
-pub(super) fn enc(value: &str) -> String {
+pub(crate) fn enc(value: &str) -> String {
     let mut out = String::with_capacity(value.len());
     for b in value.bytes() {
         if b.is_ascii_alphanumeric() || matches!(b, b'-' | b'.' | b'_' | b'~') {

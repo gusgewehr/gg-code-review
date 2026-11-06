@@ -33,7 +33,7 @@ pub(super) fn token_from_config_text(text: &str, host: &str) -> Option<String> {
     None
 }
 
-pub(super) fn apply_at(cmd: &mut Command, host: &str, token: &str) {
+pub(crate) fn apply_at(cmd: &mut Command, host: &str, token: &str) {
     cmd.env("GIT_CONFIG_COUNT", "1")
         .env("GIT_CONFIG_KEY_0", format!("http.https://{host}/.extraheader"))
         .env(

@@ -4,8 +4,10 @@
 //! the benchmark's format. It has no HTTP API and never talks to GitHub.
 
 mod export;
+mod mr;
 mod reviewbench;
 
+pub use mr::run_from_env as run_mr;
 pub use reviewbench::run_from_env as run_reviewbench;
 
 use std::path::{Path, PathBuf};
