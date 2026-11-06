@@ -1,0 +1,2 @@
+# Shell scripts run inside Linux images and WSL; a CRLF checkout breaks them.
+*.sh text eol=lf
