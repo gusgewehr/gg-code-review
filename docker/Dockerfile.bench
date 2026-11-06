@@ -1,9 +1,9 @@
 # The public benchmark image: one container reviews one pull request mounted the ReviewBench way
-# and exits. It is not a product runtime and has no HTTP API or UI; see bench/README.md.
+# and exits, or (`mr <url>`) reviews one GitLab merge request; see docs/mr-review.md. It has no
+# HTTP API or UI. scripts/review-mr.sh builds it:
 #
-#   docker compose build server
-#   docker build --platform linux/amd64 -f docker/Dockerfile.bench \
-#     --build-arg OCR_RUNTIME_IMAGE=opencodereview-server -t opencodereview-bench .
+#   docker build -f docker/Dockerfile -t opencodereview-server:mr .
+#   docker build -f docker/Dockerfile.bench --build-arg OCR_RUNTIME_IMAGE=opencodereview-server:mr -t opencodereview-mr:local .
 ARG OCR_RUNTIME_IMAGE=opencodereview-server:latest
 FROM rust:1.98.1-bookworm AS build
 WORKDIR /app
