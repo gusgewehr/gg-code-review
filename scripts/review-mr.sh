@@ -3,6 +3,7 @@
 # GitLab. See docs/mr-review.md.
 #
 #   export GITLAB_TOKEN=...              # personal access token, scopes read_api + read_repository
+#                                        # (or GITLAB_PASSWORD holding that token, glpat-...)
 #   export CLAUDE_CODE_OAUTH_TOKEN=...   # from `claude setup-token`
 #   export OCR_GITLAB_CA_FILE=~/ca.pem   # optional: internal CA (PEM)
 #   scripts/review-mr.sh https://gitlab.example.com/group/project/-/merge_requests/42
@@ -11,7 +12,10 @@
 set -eu
 
 url=${1:?usage: scripts/review-mr.sh <merge request URL>}
-: "${GITLAB_TOKEN:?export GITLAB_TOKEN (scopes read_api, read_repository) first}"
+# A personal access token works with any user name, so GITLAB_USER is not needed.
+GITLAB_TOKEN=${GITLAB_TOKEN:-${GITLAB_PASSWORD:-}}
+: "${GITLAB_TOKEN:?export GITLAB_TOKEN or GITLAB_PASSWORD (a personal access token with scopes read_api, read_repository) first}"
+export GITLAB_TOKEN
 image=${OCR_MR_IMAGE:-opencodereview-mr:local}
 root=$(cd "$(dirname "$0")/.." && pwd)
 

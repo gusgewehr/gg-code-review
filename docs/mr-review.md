@@ -14,6 +14,8 @@ the frozen snapshot of the diff, through the runner, with egress limited to the 
 - Docker (on Windows, run the script from WSL).
 - A GitLab personal access token with scopes `read_api` (merge request metadata) and
   `read_repository` (git fetch). Your own token is enough: the reviewer reads what you can read.
+  Put it in `GITLAB_TOKEN`, or in `GITLAB_PASSWORD` if your environment already keeps it there
+  (`GITLAB_TOKEN` wins when both are set; `GITLAB_USER` is not needed).
 - A Claude sign-in token from `claude setup-token`, or for Codex a sign-in file (below).
 - If the GitLab instance uses an internal CA: its certificate as a PEM file.
 
