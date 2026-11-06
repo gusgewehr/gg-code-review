@@ -79,6 +79,12 @@ Items acknowledged and deferred at milestone close on 2026-11-05:
 | uat_gap | 05-HUMAN-UAT.md (5 scenarios) | partial | v1.0 close |
 | verification_gap | 01..05-VERIFICATION.md | human_needed | v1.0 close |
 
+## Quick Tasks Completed
+
+| ID | Task | Date | Commits | Status |
+|----|------|------|---------|--------|
+| 261105-uy9 | On-demand GitLab MR reviewer (`ocr-bench mr <url>`), branch `feat/mr-reviewer` stripped to the review pipeline | 2026-11-05 | 01386e1, de9c58a, 529e407 | complete; real-MR run pending with the user |
+
 ## Session Continuity
 
 Last session: 2026-11-05
